@@ -88,9 +88,7 @@ if descritor != "Escolha...":
     st.markdown("<hr />", unsafe_allow_html=True)
     st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
 
-    total_selecionado = sum(
-        1 for key in st.session_state if key.startswith("chk_") and st.session_state[key] is True
-    )
+    total_selecionado = len(st.session_state.atividades_exibidas)
 
     col_facil, col_medio, col_dificil = st.columns(3)
     niveis_fixos = {
@@ -133,12 +131,11 @@ if descritor != "Escolha...":
                     elif not checked and idx in st.session_state.atividades_exibidas:
                         st.session_state.atividades_exibidas.remove(idx)
 
-    contador = len(st.session_state.atividades_exibidas)
+    total_selecionado = len(st.session_state.atividades_exibidas)
+    st.progress(total_selecionado / 10 if total_selecionado <= 10 else 1.0)
+    st.info(f"{total_selecionado}/10 atividades escolhidas.")
 
-    st.progress(contador / 10)
-    st.info(f"{contador}/10 atividades escolhidas.")
-
-    if contador >= 10:
+    if total_selecionado >= 10:
         st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
     if st.session_state.atividades_exibidas:
@@ -155,10 +152,9 @@ if descritor != "Escolha...":
         col_btn1, col_btn2 = st.columns([1, 1])
         with col_btn1:
             if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-                st.switch_page("AtividadeAMA")  # Caminho mais seguro no Streamlit Cloud
+                st.switch_page("AtividadeAMA")
 
         with col_btn2:
             if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
+                st.session_state.clear()
                 st.experimental_rerun()
