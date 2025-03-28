@@ -152,40 +152,7 @@ if descritor != "Escolha...":
                 st.markdown(f"[{nome}]({url_img})")
 
         if st.button("PREENCHER CABEÇALHO"):
-            st.session_state.preencher_cabecalho = True
-            st.rerun()
-
-if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabecalho:
-    st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("PREENCHA O CABEÇALHO")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        nome_aluno = st.text_input("Nome do Aluno:")
-        turma = st.text_input("Turma:")
-    with col2:
-        professor = st.text_input("Professor:")
-        data = st.date_input("Data:")
-
-    if st.button("GERAR PDF"):
-        if nome_aluno and turma and professor and data:
-            st.markdown("<hr />", unsafe_allow_html=True)
-            st.subheader("PDF GERADO COM SUCESSO!")
-            st.markdown(f"""
-            **Nome do Aluno:** {nome_aluno}
-            **Turma:** {turma}
-            **Professor:** {professor}
-            **Data:** {data.strftime('%d/%m/%Y')}
-            
-            **Atividades selecionadas:**
-            """)
-            for idx in st.session_state.atividades_exibidas:
-                nome = dados.loc[idx, "ATIVIDADE"]
-                st.markdown(f"- {nome}")
-            
-            st.success("O PDF foi gerado com sucesso! (Simulação)")
-        else:
-            st.error("Por favor, preencha todos os campos do cabeçalho.")
+            st.switch_page("pages/AtividadeAMA.py")  # ou só "AtividadeAMA" dependendo de como está estruturado
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
