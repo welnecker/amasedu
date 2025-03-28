@@ -153,7 +153,7 @@ else:
     
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
-            st.switch_page("QuestoesAMA")
+            st.switch_page("QuestoesAMA.py")
 
 
     
