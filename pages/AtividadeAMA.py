@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")  # ✅ Primeira instrução do script
+
 import fitz
 import pandas as pd
 from PIL import Image
@@ -6,7 +8,6 @@ from io import BytesIO
 import urllib.request
 import os
 
-st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")
 st.title("Documento de Atividades")
 
 dados_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
@@ -104,9 +105,8 @@ else:
     with col_cancelar:
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
-            st.switch_page("QuestoesAMA")
+            st.switch_page("../QuestoesAMA.py")  # ✅ Caminho relativo para voltar ao principal
 
     with col_proxy:
         if st.button("⚙️ Configurar Proxy"):
-            st.switch_page("pages/Proxy.py")
-
+            st.switch_page("pages/Proxy.py")  # ✅ Caminho correto para a página de proxy
