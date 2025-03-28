@@ -3,8 +3,6 @@ import pandas as pd
 import requests
 from io import StringIO
 
-st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
-
 st.markdown(
     """
     <style>
@@ -47,7 +45,6 @@ st.title("ATIVIDADE AMA 2025")
 
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
-@st.cache_data
 def carregar_dados():
     try:
         response = requests.get(url, timeout=10)
@@ -61,7 +58,7 @@ dados = carregar_dados()
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
-        st.rerun()
+        st.experimental_rerun()
     st.stop()
 
 dados.columns = dados.columns.str.strip()
@@ -91,7 +88,9 @@ if descritor != "Escolha...":
     st.markdown("<hr />", unsafe_allow_html=True)
     st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
 
-    total_selecionado = len(st.session_state.atividades_exibidas)
+    total_selecionado = sum(
+        1 for key in st.session_state if key.startswith("chk_") and st.session_state[key] is True
+    )
 
     col_facil, col_medio, col_dificil = st.columns(3)
     niveis_fixos = {
@@ -116,7 +115,7 @@ if descritor != "Escolha...":
                         st.session_state[checkbox_key] = True
                         if idx not in st.session_state.atividades_exibidas:
                             st.session_state.atividades_exibidas.append(idx)
-                    st.rerun()
+                    st.experimental_rerun()
 
             if resultado_nivel.empty:
                 st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
@@ -134,11 +133,12 @@ if descritor != "Escolha...":
                     elif not checked and idx in st.session_state.atividades_exibidas:
                         st.session_state.atividades_exibidas.remove(idx)
 
-    total_selecionado = len(st.session_state.atividades_exibidas)
-    st.progress(total_selecionado / 10 if total_selecionado <= 10 else 1.0)
-    st.info(f"{total_selecionado}/10 atividades escolhidas.")
+    contador = len(st.session_state.atividades_exibidas)
 
-    if total_selecionado >= 10:
+    st.progress(contador / 10)
+    st.info(f"{contador}/10 atividades escolhidas.")
+
+    if contador >= 10:
         st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
     if st.session_state.atividades_exibidas:
@@ -147,47 +147,18 @@ if descritor != "Escolha...":
         col1, col2 = st.columns(2)
         for count, idx in enumerate(st.session_state.atividades_exibidas):
             nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/img/{nome}.png"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[{nome}]({url_img})")
+            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+            coluna = col1 if count % 2 == 0 else col2
+            coluna.markdown(f"- **{nome}**: <a href='{url_img}' target='_blank'>🔗 Visualize a atividade</a>", unsafe_allow_html=True)
 
-        if st.button("PREENCHER CABEÇALHO"):
-            st.session_state.preencher_cabecalho = True
-            st.rerun()
+        st.markdown("<hr />", unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns([1, 1])
+        with col_btn1:
+            if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
+                st.switch_page("AtividadeAMA")  # Caminho mais seguro no Streamlit Cloud
 
-if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabecalho:
-    st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("PREENCHA O CABEÇALHO")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        nome_aluno = st.text_input("Nome do Aluno:")
-        turma = st.text_input("Turma:")
-    with col2:
-        professor = st.text_input("Professor:")
-        data = st.date_input("Data:")
-
-    if st.button("GERAR PDF"):
-        if nome_aluno and turma and professor and data:
-            st.markdown("<hr />", unsafe_allow_html=True)
-            st.subheader("PDF GERADO COM SUCESSO!")
-            st.markdown(f"""
-            **Nome do Aluno:** {nome_aluno}
-            **Turma:** {turma}
-            **Professor:** {professor}
-            **Data:** {data.strftime('%d/%m/%Y')}
-            
-            **Atividades selecionadas:**
-            """)
-            for idx in st.session_state.atividades_exibidas:
-                nome = dados.loc[idx, "ATIVIDADE"]
-                st.markdown(f"- {nome}")
-            
-            st.success("O PDF foi gerado com sucesso! (Simulação)")
-        else:
-            st.error("Por favor, preencha todos os campos do cabeçalho.")
-
-if st.button("Recomeçar tudo"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.rerun()
+        with col_btn2:
+            if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.experimental_rerun()
