@@ -149,12 +149,16 @@ if descritor != "Escolha...":
             coluna.markdown(f"- **{nome}**: <a href='{url_img}' target='_blank'>🔗 Visualize a atividade</a>", unsafe_allow_html=True)
 
         st.markdown("<hr />", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-                st.switch_page("AtividadeAMA")
+col_btn1, col_btn2 = st.columns([1, 1])
 
-        with col_btn2:
-            if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-                st.session_state.clear()
-                st.experimental_rerun()
+with col_btn1:
+    if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
+        st.switch_page("AtividadeAMA")
+
+with col_btn2:
+    recomecar = st.button("🔄 Recomeçar tudo", key="btn_recomecar")
+
+if recomecar:
+    st.session_state.clear()
+    st.experimental_rerun()
+
