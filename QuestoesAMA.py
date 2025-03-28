@@ -50,7 +50,7 @@ with col_descritor:
 
 if descritor != "Escolha...":
     st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("ESCOLHA À SUA VONTADE ATÉ 10 ATIVIDADES.")
+    st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
 
     col_facil, col_medio, col_dificil = st.columns(3)
     niveis_fixos = {
