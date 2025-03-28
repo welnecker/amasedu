@@ -1,3 +1,6 @@
+# Proxy
+
+
 import streamlit as st
 st.set_page_config(page_title="Configurar Proxy", layout="centered")
 
@@ -25,4 +28,4 @@ else:
     st.success("Nenhuma configuração de proxy ativa.")
 
 if st.button("⬅ Voltar para atividades"):
-    st.switch_page("../QuestoesAMA.py")
+    st.switch_page("../QuestoesAMA")

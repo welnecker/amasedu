@@ -1,7 +1,11 @@
+# QuestoesAMA
+
 import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
+
+
 
 st.markdown(
     """
@@ -152,7 +156,7 @@ if descritor != "Escolha...":
         col_btn1, col_btn2 = st.columns([1, 1])
         with col_btn1:
             if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-                st.switch_page("pages/AtividadeAMA.py")  # ✅ Caminho corrigido
+                st.switch_page("pages/AtividadeAMA")  # ✅ Caminho corrigido
 
         with col_btn2:
             if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
