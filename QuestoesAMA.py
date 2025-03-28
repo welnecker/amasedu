@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 from io import StringIO
 
+st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
+
 st.markdown(
     """
     <style>
@@ -26,9 +28,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-#st.set_page_config(page_title="ATIVIDADE AMA 2025", layout="centered")
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
-# Estilo personalizado
 st.markdown("""
 <style>
     div.block-container {
@@ -45,10 +45,9 @@ st.markdown("""
 
 st.title("ATIVIDADE AMA 2025")
 
-# URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
-# Função de carregamento com tratamento de erro
+@st.cache_data
 def carregar_dados():
     try:
         response = requests.get(url, timeout=10)
@@ -57,23 +56,19 @@ def carregar_dados():
     except Exception:
         return None
 
-# Carrega os dados
 dados = carregar_dados()
 
-# Se falhar, mostra botão "Tentar novamente"
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
 
-# Ajuste de colunas (como no seu original)
 dados.columns = dados.columns.str.strip()
 for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
     if col in dados.columns:
         dados[col] = dados[col].astype(str).str.strip()
 
-# Inicia lista de atividades se não existir
 if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
 
@@ -96,6 +91,8 @@ if descritor != "Escolha...":
     st.markdown("<hr />", unsafe_allow_html=True)
     st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
 
+    total_selecionado = len(st.session_state.atividades_exibidas)
+
     col_facil, col_medio, col_dificil = st.columns(3)
     niveis_fixos = {
         'Facil': ('Fácil', col_facil),
@@ -106,23 +103,28 @@ if descritor != "Escolha...":
     for nivel_nome, (nivel_titulo, coluna) in niveis_fixos.items():
         with coluna:
             st.markdown(f"#### {nivel_titulo}")
-
             resultado_nivel = dados.query(
                 'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
             )[["ATIVIDADE"]].head(10)
+
+            if not resultado_nivel.empty:
+                if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"btn_select_{nivel_nome}"):
+                    for idx in resultado_nivel.index:
+                        if len(st.session_state.atividades_exibidas) >= 10:
+                            break
+                        checkbox_key = f"chk_{idx}"
+                        st.session_state[checkbox_key] = True
+                        if idx not in st.session_state.atividades_exibidas:
+                            st.session_state.atividades_exibidas.append(idx)
+                    st.rerun()
 
             if resultado_nivel.empty:
                 st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
             else:
                 for idx, row in resultado_nivel.iterrows():
                     checkbox_key = f"chk_{idx}"
-
                     if checkbox_key not in st.session_state:
                         st.session_state[checkbox_key] = False
-
-                    total_selecionado = sum(
-                        1 for key in st.session_state if key.startswith("chk_") and st.session_state[key] is True
-                    )
 
                     disabled = total_selecionado >= 10 and not st.session_state[checkbox_key]
                     checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
@@ -132,11 +134,12 @@ if descritor != "Escolha...":
                     elif not checked and idx in st.session_state.atividades_exibidas:
                         st.session_state.atividades_exibidas.remove(idx)
 
-    contador = len(st.session_state.atividades_exibidas)
-    if contador >= 10:
-        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+    total_selecionado = len(st.session_state.atividades_exibidas)
+    st.progress(total_selecionado / 10 if total_selecionado <= 10 else 1.0)
+    st.info(f"{total_selecionado}/10 atividades escolhidas.")
 
-    st.info(f"Atividades escolhidas: {contador}")
+    if total_selecionado >= 10:
+        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
     if st.session_state.atividades_exibidas:
         st.markdown("<hr />", unsafe_allow_html=True)
@@ -144,17 +147,47 @@ if descritor != "Escolha...":
         col1, col2 = st.columns(2)
         for count, idx in enumerate(st.session_state.atividades_exibidas):
             nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            coluna = col1 if count % 2 == 0 else col2
-            coluna.markdown(f"- **{nome}**: <a href='{url_img}' target='_blank'>🔗 Visualize a atividade</a>", unsafe_allow_html=True)
+            url_img = f"https://questoesama.pages.dev/img/{nome}.png"
+            with col1 if count % 2 == 0 else col2:
+                st.markdown(f"[{nome}]({url_img})")
 
-        st.markdown("<hr />", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-                st.switch_page("pages/AtividadeAMA.py")  # ✅ Caminho corrigido
+        if st.button("PREENCHER CABEÇALHO"):
+            st.session_state.preencher_cabecalho = True
+            st.rerun()
 
-        with col_btn2:
-            if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-                st.session_state.clear()
-                st.experimental_rerun()
+if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabecalho:
+    st.markdown("<hr />", unsafe_allow_html=True)
+    st.subheader("PREENCHA O CABEÇALHO")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        nome_aluno = st.text_input("Nome do Aluno:")
+        turma = st.text_input("Turma:")
+    with col2:
+        professor = st.text_input("Professor:")
+        data = st.date_input("Data:")
+
+    if st.button("GERAR PDF"):
+        if nome_aluno and turma and professor and data:
+            st.markdown("<hr />", unsafe_allow_html=True)
+            st.subheader("PDF GERADO COM SUCESSO!")
+            st.markdown(f"""
+            **Nome do Aluno:** {nome_aluno}
+            **Turma:** {turma}
+            **Professor:** {professor}
+            **Data:** {data.strftime('%d/%m/%Y')}
+            
+            **Atividades selecionadas:**
+            """)
+            for idx in st.session_state.atividades_exibidas:
+                nome = dados.loc[idx, "ATIVIDADE"]
+                st.markdown(f"- {nome}")
+            
+            st.success("O PDF foi gerado com sucesso! (Simulação)")
+        else:
+            st.error("Por favor, preencha todos os campos do cabeçalho.")
+
+if st.button("Recomeçar tudo"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
