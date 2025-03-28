@@ -1,6 +1,3 @@
-# AtividadeAMA
-
-
 import streamlit as st
 st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")
 
@@ -160,4 +157,4 @@ else:
 
     with col_proxy:
         if st.button("⚙️ Configurar Proxy"):
-            st.switch_page("pages/Proxy")
+            st.switch_page("pages/Proxy.py")
