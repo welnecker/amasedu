@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 from io import StringIO
 
+st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
+
 st.markdown(
     """
     <style>
@@ -45,6 +47,7 @@ st.title("ATIVIDADE AMA 2025")
 
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
+@st.cache_data
 def carregar_dados():
     try:
         response = requests.get(url, timeout=10)
@@ -58,7 +61,7 @@ dados = carregar_dados()
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
 
 dados.columns = dados.columns.str.strip()
@@ -113,7 +116,7 @@ if descritor != "Escolha...":
                         st.session_state[checkbox_key] = True
                         if idx not in st.session_state.atividades_exibidas:
                             st.session_state.atividades_exibidas.append(idx)
-                    st.experimental_rerun()
+                    st.rerun()
 
             if resultado_nivel.empty:
                 st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
@@ -144,21 +147,47 @@ if descritor != "Escolha...":
         col1, col2 = st.columns(2)
         for count, idx in enumerate(st.session_state.atividades_exibidas):
             nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            coluna = col1 if count % 2 == 0 else col2
-            coluna.markdown(f"- **{nome}**: <a href='{url_img}' target='_blank'>🔗 Visualize a atividade</a>", unsafe_allow_html=True)
+            url_img = f"https://questoesama.pages.dev/img/{nome}.png"
+            with col1 if count % 2 == 0 else col2:
+                st.markdown(f"[{nome}]({url_img})")
 
-        st.markdown("<hr />", unsafe_allow_html=True)
-col_btn1, col_btn2 = st.columns([1, 1])
+        if st.button("PREENCHER CABEÇALHO"):
+            st.session_state.preencher_cabecalho = True
+            st.rerun()
 
-with col_btn1:
-    if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-        st.switch_page("AtividadeAMA")
+if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabecalho:
+    st.markdown("<hr />", unsafe_allow_html=True)
+    st.subheader("PREENCHA O CABEÇALHO")
 
-with col_btn2:
-    recomecar = st.button("🔄 Recomeçar tudo", key="btn_recomecar")
+    col1, col2 = st.columns(2)
+    with col1:
+        nome_aluno = st.text_input("Nome do Aluno:")
+        turma = st.text_input("Turma:")
+    with col2:
+        professor = st.text_input("Professor:")
+        data = st.date_input("Data:")
 
-if recomecar:
-    st.session_state.clear()
-    st.experimental_rerun()
+    if st.button("GERAR PDF"):
+        if nome_aluno and turma and professor and data:
+            st.markdown("<hr />", unsafe_allow_html=True)
+            st.subheader("PDF GERADO COM SUCESSO!")
+            st.markdown(f"""
+            **Nome do Aluno:** {nome_aluno}
+            **Turma:** {turma}
+            **Professor:** {professor}
+            **Data:** {data.strftime('%d/%m/%Y')}
+            
+            **Atividades selecionadas:**
+            """)
+            for idx in st.session_state.atividades_exibidas:
+                nome = dados.loc[idx, "ATIVIDADE"]
+                st.markdown(f"- {nome}")
+            
+            st.success("O PDF foi gerado com sucesso! (Simulação)")
+        else:
+            st.error("Por favor, preencha todos os campos do cabeçalho.")
 
+if st.button("Recomeçar tudo"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
