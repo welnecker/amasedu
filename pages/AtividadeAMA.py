@@ -153,7 +153,7 @@ else:
     with col_cancelar:
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
-            st.switch_page("../QuestoesAMA.py")
+            st.switch_page("QuestoesAMA")
 
     with col_proxy:
         if st.button("⚙️ Configurar Proxy"):
