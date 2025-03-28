@@ -10,6 +10,7 @@ import os
 import requests
 from io import StringIO
 
+
 st.markdown(
     """
     <style>
@@ -33,7 +34,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+#st.title("Documento de Atividades")
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
+
 
 # URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
@@ -107,6 +111,15 @@ else:
                     url_img = f"https://questoesama.pages.dev/{nome_atividade}.jpg"
 
                     try:
+                        # 🔇 PROXY DESATIVADO — descomente se necessário futuramente
+                        # if "proxy_usuario" in st.session_state and "proxy_senha" in st.session_state and "proxy_servidor" in st.session_state:
+                        #     proxy_handler = urllib.request.ProxyHandler({
+                        #         'http': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}",
+                        #         'https': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}"
+                        #     })
+                        #     opener = urllib.request.build_opener(proxy_handler)
+                        #     urllib.request.install_opener(opener)
+
                         req = urllib.request.Request(
                             url_img,
                             headers={'User-Agent': 'Mozilla/5.0'}
@@ -128,7 +141,6 @@ else:
 
                     except Exception as e:
                         erro_download = True
-                        st.error(f"Erro ao baixar imagem {nome_atividade}: {str(e)}")
 
                 if erro_download:
                     st.warning("⚠️ Algumas imagens não foram baixadas. Verifique sua conexão.")
@@ -141,26 +153,9 @@ else:
     with col_cancelar:
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
-            st.write("Redirecionando para a página inicial...")
-            st.experimental_set_query_params(page="QuestoesAMA")
-            st.experimental_rerun()
+            st.switch_page("QuestoesAMA")
+
 
     with col_proxy:
         if st.button("⚙️ Configurar Proxy"):
-            st.write("Redirecionando para a página de configuração de proxy...")
-            st.experimental_set_query_params(page="Proxy")
-            st.experimental_rerun()
-
-# Adicione isso no final do script para lidar com a navegação
-params = st.experimental_get_query_params()
-if "page" in params:
-    if params["page"][0] == "QuestoesAMA":
-        st.write("Redirecionando para a página inicial...")
-        # Aqui você pode adicionar o código para exibir a página inicial
-        # ou redirecionar para o script principal
-    elif params["page"][0] == "Proxy":
-        st.write("Redirecionando para a página de configuração de proxy...")
-        # Aqui você pode adicionar o código para exibir a página de configuração de proxy
-        # ou redirecionar para o script de configuração de proxy
-
-    
+            st.switch_page("pages/Proxy.py")
