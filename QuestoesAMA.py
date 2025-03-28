@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
+import requests
+from io import StringIO
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", layout="centered")
 
-# Estilo para reduzir espaçamento
+# Estilo personalizado
 st.markdown("""
 <style>
     div.block-container {
@@ -20,17 +22,33 @@ st.markdown("""
 
 st.title("ATIVIDADE AMA 2025")
 
+# URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
-try:
-    dados = pd.read_csv(url)
-    dados.columns = dados.columns.str.strip()
-    for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
-        if col in dados.columns:
-            dados[col] = dados[col].astype(str).str.strip()
-except Exception as e:
-    st.error("Erro ao carregar os dados: " + str(e))
+# Função de carregamento com tratamento de erro
+def carregar_dados():
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return pd.read_csv(StringIO(response.text))
+    except Exception:
+        return None
+
+# Carrega os dados
+dados = carregar_dados()
+
+# Se falhar, mostra botão "Tentar novamente"
+if dados is None:
+    st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
+    if st.button("🔄 Tentar novamente"):
+        st.experimental_rerun()
     st.stop()
+
+# Ajuste de colunas (como no seu original)
+dados.columns = dados.columns.str.strip()
+for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
+    if col in dados.columns:
+        dados[col] = dados[col].astype(str).str.strip()
 
 # Inicia lista de atividades se não existir
 if "atividades_exibidas" not in st.session_state:
@@ -39,11 +57,14 @@ if "atividades_exibidas" not in st.session_state:
 serie_opcoes = sorted(dados["SERIE"].dropna().unique())
 st.markdown("### Escolha Série, Habilidade e Descritor.")
 col_serie, col_habilidade, col_descritor = st.columns(3)
+
 with col_serie:
     serie = st.selectbox("**SÉRIE**", ["Escolha..."] + serie_opcoes, key="serie")
+
 with col_habilidade:
     habilidade_opcoes = sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else []
     habilidade = st.selectbox("**HABILIDADE**", ["Escolha..."] + habilidade_opcoes, key="habilidade")
+
 with col_descritor:
     descritor_opcoes = sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else []
     descritor = st.selectbox("**DESCRITOR**", ["Escolha..."] + descritor_opcoes, key="descritor")

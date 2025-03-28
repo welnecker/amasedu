@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")  # ✅ Primeira instrução do script
+st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")
 
 import fitz
 import pandas as pd
@@ -7,11 +7,31 @@ from PIL import Image
 from io import BytesIO
 import urllib.request
 import os
+import requests
+from io import StringIO
 
 st.title("Documento de Atividades")
 
-dados_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
-dados = pd.read_csv(dados_url)
+# URL da planilha
+url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+
+# Função com tratamento de falha de rede
+def carregar_dados():
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return pd.read_csv(StringIO(response.text))
+    except Exception:
+        return None
+
+dados = carregar_dados()
+
+if dados is None:
+    st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
+    if st.button("🔄 Tentar novamente"):
+        st.experimental_rerun()
+    st.stop()
+
 dados.columns = dados.columns.str.strip()
 
 st.subheader("Preencha o cabeçalho:")
@@ -36,7 +56,7 @@ else:
     with col_gerar:
         if st.button("📄 GERAR ATIVIDADE"):
             with st.spinner("Inserindo imagens no PDF existente..."):
-                pdf_path = "modelo.pdf"
+                pdf_path = "modelo.pdf"  # Caminho relativo compatível com Streamlit Cloud
                 pdf_document = fitz.open(pdf_path)
 
                 first_page = pdf_document[0]
@@ -105,8 +125,8 @@ else:
     with col_cancelar:
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
-            st.switch_page("../QuestoesAMA.py")  # ✅ Caminho relativo para voltar ao principal
+            st.switch_page("../QuestoesAMA.py")
 
     with col_proxy:
         if st.button("⚙️ Configurar Proxy"):
-            st.switch_page("pages/Proxy.py")  # ✅ Caminho correto para a página de proxy
+            st.switch_page("pages/Proxy.py")
