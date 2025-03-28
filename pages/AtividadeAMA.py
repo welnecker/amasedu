@@ -36,7 +36,7 @@ else:
     with col_gerar:
         if st.button("📄 GERAR ATIVIDADE"):
             with st.spinner("Inserindo imagens no PDF existente..."):
-                pdf_path = r"C:\\Users\\jdwelnecker\\Python_Janio\\AMA2025\\modelo.pdf"
+                pdf_path = "modelo.pdf"
                 pdf_document = fitz.open(pdf_path)
 
                 first_page = pdf_document[0]
