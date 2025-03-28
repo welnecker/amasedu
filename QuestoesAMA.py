@@ -3,15 +3,6 @@ import pandas as pd
 import requests
 from io import StringIO
 
-# ✅ Limpa apenas variáveis específicas se necessário
-if st.session_state.get("recomecar", False):
-    for key in list(st.session_state.keys()):
-        if key.startswith("chk_") or key == "atividades_exibidas" or key == "recomecar":
-            del st.session_state[key]
-    st.experimental_rerun()
-
-
-
 st.markdown(
     """
     <style>
@@ -165,7 +156,5 @@ if descritor != "Escolha...":
 
         with col_btn2:
             if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-             st.session_state["recomecar"] = True
-            st.experimental_rerun()
-
-
+                st.session_state.clear()
+                st.experimental_rerun()
