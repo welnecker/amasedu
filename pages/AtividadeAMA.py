@@ -36,6 +36,8 @@ st.markdown(
 
 
 #st.title("Documento de Atividades")
+st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
+
 
 # URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
