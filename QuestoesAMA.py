@@ -3,6 +3,10 @@ import pandas as pd
 import requests
 from io import StringIO
 
+# ✅ Se a flag de "recomeçar" estiver ativada, limpa tudo e reinicia a página
+if st.session_state.get("recomecar", False):
+    st.session_state.clear()
+    st.experimental_rerun()
 
 
 st.markdown(
@@ -158,5 +162,6 @@ if descritor != "Escolha...":
 
         with col_btn2:
             if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-                st.session_state.clear()
+                st.session_state["recomecar"] = True
                 st.experimental_rerun()
+
