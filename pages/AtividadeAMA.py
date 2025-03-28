@@ -85,7 +85,7 @@ else:
                 first_page = pdf_document[0]
                 y_position = 120
 
-                                text = (
+                text = (
                     f"Escola: {titulo_escola}                       Data: {data.strftime('%d/%m/%Y')}\n"
                     f"Estudante: _________________________________     Turma: ____________\n"
                     f"Professor(a): {nome_professor}"
