@@ -16,17 +16,18 @@ st.markdown(
     <style>
     .stApp {
         background-image: url("https://questoesama.pages.dev/img/fundo.png");
-        background-size: cover;
-        background-position: top left;
+        background-size: contain;
         background-repeat: no-repeat;
+        background-position: center top;
+        background-attachment: fixed;
     }
 
-    /* Opcional: fundo branco translúcido para o conteúdo */
     .main > div {
         background-color: rgba(255, 255, 255, 0.85);
-        padding: 1.5rem;
+        padding: 2rem;
         border-radius: 15px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        margin-top: 100px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     </style>
     """,
