@@ -1,7 +1,15 @@
 import streamlit as st
+st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")
+
+import fitz
 import pandas as pd
+from PIL import Image
+from io import BytesIO
+import urllib.request
+import os
 import requests
 from io import StringIO
+
 
 st.markdown(
     """
@@ -26,25 +34,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+#st.title("Documento de Atividades")
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
-st.markdown("""
-<style>
-    div.block-container {
-        padding: 0.5rem 1rem 0.5rem 1rem;
-    }
-    .element-container {  
-        margin-bottom: 0.25rem !important;
-    }
-    hr {
-        margin: 0.5rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
 
-st.title("ATIVIDADE AMA 2025")
 
+# URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
+# Função com tratamento de falha de rede
 def carregar_dados():
     try:
         response = requests.get(url, timeout=10)
@@ -62,103 +60,101 @@ if dados is None:
     st.stop()
 
 dados.columns = dados.columns.str.strip()
-for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
-    if col in dados.columns:
-        dados[col] = dados[col].astype(str).str.strip()
 
-if "atividades_exibidas" not in st.session_state:
-    st.session_state.atividades_exibidas = []
+st.subheader("Preencha o cabeçalho da atividade:")
+titulo_escola = st.text_input("Escola:")
+data = st.date_input("Data:")
+nome_professor = st.text_input("Nome do Professor(a):")
 
-serie_opcoes = sorted(dados["SERIE"].dropna().unique())
-st.markdown("### Escolha Série, Habilidade e Descritor.")
-col_serie, col_habilidade, col_descritor = st.columns(3)
+if "atividades_exibidas" not in st.session_state or len(st.session_state["atividades_exibidas"]) == 0:
+    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
+else:
+    imagens_baixadas = False
+    erro_download = False
 
-with col_serie:
-    serie = st.selectbox("**SÉRIE**", ["Escolha..."] + serie_opcoes, key="serie")
+    st.success("Atividades selecionadas:")
+    col_a, col_b = st.columns(2)
+    for i, idx in enumerate(st.session_state.atividades_exibidas):
+        nome = dados.loc[idx, "ATIVIDADE"]
+        with (col_a if i % 2 == 0 else col_b):
+            st.markdown(f"- **Atividade:** {nome}")
 
-with col_habilidade:
-    habilidade_opcoes = sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else []
-    habilidade = st.selectbox("**HABILIDADE**", ["Escolha..."] + habilidade_opcoes, key="habilidade")
+    col_gerar, col_cancelar, col_proxy = st.columns([1, 1, 1])
+    with col_gerar:
+        if st.button("📄 GERAR ATIVIDADE"):
+            with st.spinner("Inserindo imagens no PDF existente..."):
+                pdf_path = "modelo.pdf"
+                pdf_document = fitz.open(pdf_path)
 
-with col_descritor:
-    descritor_opcoes = sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else []
-    descritor = st.selectbox("**DESCRITOR**", ["Escolha..."] + descritor_opcoes, key="descritor")
+                first_page = pdf_document[0]
+                y_position = 120
 
-if descritor != "Escolha...":
-    st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
+                text = (
+                    f"Escola: {titulo_escola}                       Data: {data.strftime('%d/%m/%Y')}\n"
+                    f"Estudante: _________________________________     Turma: ____________\n"
+                    f"Professor(a): {nome_professor}"
+                )
 
-    total_selecionado = sum(
-        1 for key in st.session_state if key.startswith("chk_") and st.session_state[key] is True
-    )
+                first_page.insert_text(
+                    fitz.Point(72, y_position),
+                    text,
+                    fontsize=12,
+                    fontname="helv",
+                    color=(0, 0, 0),
+                )
 
-    col_facil, col_medio, col_dificil = st.columns(3)
-    niveis_fixos = {
-        'Facil': ('Fácil', col_facil),
-        'Medio': ('Médio', col_medio),
-        'Dificil': ('Difícil', col_dificil),
-    }
+                y_position += 60
+                page = first_page
 
-    for nivel_nome, (nivel_titulo, coluna) in niveis_fixos.items():
-        with coluna:
-            st.markdown(f"#### {nivel_titulo}")
-            resultado_nivel = dados.query(
-                'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
-            )[["ATIVIDADE"]].head(10)
+                for idx in st.session_state.atividades_exibidas:
+                    nome_atividade = dados.loc[idx, "ATIVIDADE"]
+                    url_img = f"https://questoesama.pages.dev/{nome_atividade}.jpg"
 
-            if not resultado_nivel.empty:
-                if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"btn_select_{nivel_nome}"):
-                    for idx in resultado_nivel.index:
-                        if len(st.session_state.atividades_exibidas) >= 10:
-                            break
-                        checkbox_key = f"chk_{idx}"
-                        st.session_state[checkbox_key] = True
-                        if idx not in st.session_state.atividades_exibidas:
-                            st.session_state.atividades_exibidas.append(idx)
-                    st.experimental_rerun()
+                    try:
+                        # 🔇 PROXY DESATIVADO — descomente se necessário futuramente
+                        # if "proxy_usuario" in st.session_state and "proxy_senha" in st.session_state and "proxy_servidor" in st.session_state:
+                        #     proxy_handler = urllib.request.ProxyHandler({
+                        #         'http': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}",
+                        #         'https': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}"
+                        #     })
+                        #     opener = urllib.request.build_opener(proxy_handler)
+                        #     urllib.request.install_opener(opener)
 
-            if resultado_nivel.empty:
-                st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
-            else:
-                for idx, row in resultado_nivel.iterrows():
-                    checkbox_key = f"chk_{idx}"
-                    if checkbox_key not in st.session_state:
-                        st.session_state[checkbox_key] = False
+                        req = urllib.request.Request(
+                            url_img,
+                            headers={'User-Agent': 'Mozilla/5.0'}
+                        )
+                        with urllib.request.urlopen(req) as resp:
+                            img = Image.open(BytesIO(resp.read())).convert("RGB")
 
-                    disabled = total_selecionado >= 10 and not st.session_state[checkbox_key]
-                    checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
+                        imagens_baixadas = True
 
-                    if checked and idx not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(idx)
-                    elif not checked and idx in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.remove(idx)
+                        img_bytes = BytesIO()
+                        img.save(img_bytes, format='JPEG')
 
-    contador = len(st.session_state.atividades_exibidas)
+                        if y_position > 700:
+                            page = pdf_document.new_page()
+                            y_position = 10
 
-    st.progress(contador / 10)
-    st.info(f"{contador}/10 atividades escolhidas.")
+                        page.insert_image(fitz.Rect(72, y_position, 520, y_position + 160), stream=img_bytes.getvalue())
+                        y_position += 162
 
-    if contador >= 10:
-        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+                    except Exception as e:
+                        erro_download = True
 
-    if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, idx in enumerate(st.session_state.atividades_exibidas):
-            nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            coluna = col1 if count % 2 == 0 else col2
-            coluna.markdown(f"- **{nome}**: <a href='{url_img}' target='_blank'>🔗 Visualize a atividade</a>", unsafe_allow_html=True)
+                if erro_download:
+                    st.warning("⚠️ Algumas imagens não foram baixadas. Verifique sua conexão.")
 
-        st.markdown("<hr />", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            if st.button("📝 PREENCHER CABEÇALHO", key="btn_preencher"):
-                st.switch_page("AtividadeAMA")  # Caminho mais seguro no Streamlit Cloud
+                if imagens_baixadas:
+                    pdf_bytes = pdf_document.write()
+                    st.download_button("📥 Baixar PDF Completo", pdf_bytes, "documento_completo.pdf", "application/pdf")
+                    st.success("PDF criado com sucesso!")
 
-        with col_btn2:
-            if st.button("🔄 Recomeçar tudo", key="btn_recomecar"):
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                st.experimental_rerun()
+    with col_cancelar:
+        if st.button("❌ CANCELAR E RECOMEÇAR"):
+            st.session_state.clear()
+            st.switch_page("QuestoesAMA")
+
+    with col_proxy:
+        if st.button("⚙️ Configurar Proxy"):
+            st.switch_page("pages/Proxy.py")
