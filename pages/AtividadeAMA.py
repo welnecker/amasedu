@@ -150,12 +150,12 @@ else:
                     st.download_button("📥 Baixar PDF Completo", pdf_bytes, "documento_completo.pdf", "application/pdf")
                     st.success("PDF criado com sucesso!")
 
-    with col_cancelar:
+    
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
             st.switch_page("QuestoesAMA")
 
 
-    with col_proxy:
+    
         if st.button("⚙️ Configurar Proxy"):
             st.switch_page("pages/Proxy.py")
