@@ -56,7 +56,7 @@ else:
     with col_gerar:
         if st.button("📄 GERAR ATIVIDADE"):
             with st.spinner("Inserindo imagens no PDF existente..."):
-                pdf_path = "modelo.pdf"  # Caminho relativo compatível com Streamlit Cloud
+                pdf_path = "modelo.pdf"
                 pdf_document = fitz.open(pdf_path)
 
                 first_page = pdf_document[0]
@@ -84,13 +84,14 @@ else:
                     url_img = f"https://questoesama.pages.dev/{nome_atividade}.jpg"
 
                     try:
-                        if "proxy_usuario" in st.session_state and "proxy_senha" in st.session_state and "proxy_servidor" in st.session_state:
-                            proxy_handler = urllib.request.ProxyHandler({
-                                'http': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}",
-                                'https': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}"
-                            })
-                            opener = urllib.request.build_opener(proxy_handler)
-                            urllib.request.install_opener(opener)
+                        # 🔇 PROXY DESATIVADO — descomente se necessário futuramente
+                        # if "proxy_usuario" in st.session_state and "proxy_senha" in st.session_state and "proxy_servidor" in st.session_state:
+                        #     proxy_handler = urllib.request.ProxyHandler({
+                        #         'http': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}",
+                        #         'https': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}"
+                        #     })
+                        #     opener = urllib.request.build_opener(proxy_handler)
+                        #     urllib.request.install_opener(opener)
 
                         req = urllib.request.Request(
                             url_img,
@@ -115,7 +116,7 @@ else:
                         erro_download = True
 
                 if erro_download:
-                    st.warning("⚠️ Imagens não baixadas. Clique no botão \"Configurar Proxy\" ao lado.")
+                    st.warning("⚠️ Algumas imagens não foram baixadas. Verifique sua conexão.")
 
                 if imagens_baixadas:
                     pdf_bytes = pdf_document.write()
