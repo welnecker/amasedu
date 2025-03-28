@@ -35,7 +35,7 @@ st.markdown(
 )
 
 
-st.title("Documento de Atividades")
+#st.title("Documento de Atividades")
 
 # URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
@@ -59,7 +59,7 @@ if dados is None:
 
 dados.columns = dados.columns.str.strip()
 
-st.subheader("Preencha o cabeçalho:")
+st.subheader("Preencha o cabeçalho da atividade:")
 titulo_escola = st.text_input("Escola:")
 data = st.date_input("Data:")
 nome_professor = st.text_input("Nome do Professor(a):")
