@@ -36,7 +36,7 @@ st.markdown(
 
 
 #st.title("Documento de Atividades")
-st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 
 # URL da planilha
