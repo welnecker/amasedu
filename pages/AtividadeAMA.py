@@ -26,7 +26,6 @@ st.markdown(
         padding: 2rem;
         border-radius: 20px;
         box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        margin-top: 80px;
     }
 
     .element-container {
@@ -41,8 +40,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
+#st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
