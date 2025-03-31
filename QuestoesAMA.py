@@ -10,23 +10,32 @@ st.markdown(
     <style>
     .stApp {
         background-image: url("https://questoesama.pages.dev/img/fundo.png");
-        background-size: contain;
+        background-size: cover;
         background-repeat: no-repeat;
         background-position: center top;
         background-attachment: fixed;
     }
 
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.85);
+    .block-container {
+        background-color: rgba(255, 255, 255, 0.9);
         padding: 2rem;
-        border-radius: 15px;
-        margin-top: 100px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        margin-top: 80px;
+    }
+
+    .element-container {
+        margin-bottom: 0.25rem !important;
+    }
+
+    hr {
+        margin: 0.5rem 0;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 st.markdown("""
