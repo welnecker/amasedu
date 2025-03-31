@@ -90,20 +90,27 @@ with col_gerar:
 
                 response = requests.post(url_api, json=payload)
 
-                # Envio automático para Google Forms (oculto)
+                # Envio automático de log para Google Forms
+                headers = {
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+
                 form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
                 dados_forms = {
-                    "entry.2055031303": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
+                    "entry.2055031303": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "entry.1280209296": professor,
                     "entry.1776849395": st.session_state.get("serie", ""),
                     "entry.1049281286": st.session_state.get("descritor", ""),
                     "entry.1929389299": st.session_state.get("habilidade", ""),
                     "entry.422191746": str(len(st.session_state.atividades_exibidas)),
                 }
+
                 try:
-                    requests.post(form_url, data=dados_forms)
-                except:
-                    pass  # ignora falha silenciosamente
+                    requests.post(form_url, data=dados_forms, headers=headers, timeout=5)
+                except Exception as e:
+                    st.warning(f"⚠️ Falha ao enviar log para o formulário: {e}")
 
                 if response.status_code == 200:
                     st.download_button(
