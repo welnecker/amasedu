@@ -106,4 +106,4 @@ with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
         st.session_state.clear()
         st.switch_page("QuestoesAMA.py")
-##
+####
