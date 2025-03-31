@@ -1,11 +1,8 @@
-# AtividadeAMA.py (gerador de PDF)
+# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF)
 import streamlit as st
 import pandas as pd
 import requests
-from io import StringIO, BytesIO
-import fitz  # PyMuPDF
-from PIL import Image
-import urllib.request
+from io import StringIO
 from datetime import datetime
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
@@ -80,50 +77,30 @@ with col_gerar:
             st.warning("Preencha todos os campos antes de gerar o PDF.")
             st.stop()
 
-        with st.spinner("Gerando PDF com as atividades..."):
+        with st.spinner("Enviando dados para o gerador de PDF..."):
             try:
-                pdf = fitz.open("modelo.pdf")
-                pagina = pdf[0]
+                url_api = "https://amasedu.onrender.com/gerar-pdf"
+                atividades = [dados.loc[idx, "ATIVIDADE"] for idx in st.session_state.atividades_exibidas]
+                payload = {
+                    "escola": escola,
+                    "professor": professor,
+                    "data": data.strftime("%Y-%m-%d"),
+                    "atividades": atividades
+                }
 
-                texto = (
-                    f"Escola: {escola}                       Data: {data.strftime('%d/%m/%Y')}\n"
-                    f"Estudante: _________________________________     Turma: ____________\n"
-                    f"Professor(a): {professor}"
-                )
-
-                pagina.insert_text(
-                    fitz.Point(72, 120), texto, fontsize=12, fontname="helv", color=(0, 0, 0)
-                )
-
-                y = 180
-                for idx in st.session_state.atividades_exibidas:
-                    nome = dados.loc[idx, "ATIVIDADE"]
-                    url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-                    try:
-                        req = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
-                        with urllib.request.urlopen(req) as resp:
-                            img = Image.open(BytesIO(resp.read())).convert("RGB")
-
-                        buffer = BytesIO()
-                        img.save(buffer, format='JPEG')
-
-                        if y > 700:
-                            pagina = pdf.new_page()
-                            y = 10
-
-                        pagina.insert_image(
-                            fitz.Rect(72, y, 520, y + 160), stream=buffer.getvalue()
-                        )
-                        y += 162
-                    except:
-                        st.warning(f"Erro ao baixar a imagem: {nome}")
-
-                nome_arquivo = f"{professor}_{data.strftime('%Y-%m-%d')}.pdf"
-                pdf_bytes = pdf.write()
-                st.download_button("📥 Baixar PDF", pdf_bytes, nome_arquivo, "application/pdf")
-                st.success("PDF criado com sucesso!")
+                response = requests.post(url_api, json=payload)
+                if response.status_code == 200:
+                    st.download_button(
+                        label="📥 Baixar PDF",
+                        data=response.content,
+                        file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
+                        mime="application/pdf"
+                    )
+                    st.success("PDF gerado com sucesso!")
+                else:
+                    st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
             except Exception as e:
-                st.error("Erro ao gerar o PDF. Tente novamente.")
+                st.error(f"Erro de conexão com o gerador de PDF: {str(e)}")
 
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
