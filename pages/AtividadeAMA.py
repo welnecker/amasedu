@@ -49,7 +49,7 @@ dados = carregar_dados()
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
 
 # --- CAMPOS DO CABEÇALHO ---
