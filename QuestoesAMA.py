@@ -126,8 +126,12 @@ if descritor != "Escolha...":
                     if checkbox_key not in st.session_state:
                         st.session_state[checkbox_key] = False
 
-                    disabled = total_selecionado >= 10 and not st.session_state[checkbox_key]
+                    disabled = (
+                        checkbox_key not in st.session_state or not st.session_state[checkbox_key]
+       ) and len(st.session_state.atividades_exibidas) >= 10
+
                     checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
+
 
                     if checked and idx not in st.session_state.atividades_exibidas:
                         st.session_state.atividades_exibidas.append(idx)
