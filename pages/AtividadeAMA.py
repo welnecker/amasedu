@@ -26,6 +26,7 @@ st.markdown(
         padding: 2rem;
         border-radius: 20px;
         box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        margin-top: 60px;
     }
 
     .element-container {
@@ -39,6 +40,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 #st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
