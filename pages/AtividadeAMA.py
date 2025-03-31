@@ -1,15 +1,14 @@
 import streamlit as st
-st.set_page_config(page_title="ACESSAR ATIVIDADE", layout="centered")
-
-import fitz
 import pandas as pd
+import requests
+from io import StringIO
+import fitz
 from PIL import Image
 from io import BytesIO
 import urllib.request
-import os
-import requests
-from io import StringIO
+from datetime import datetime
 
+st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
 st.markdown(
     """
@@ -34,15 +33,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-#st.title("Documento de Atividades")
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
-
-# URL da planilha
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
-# Função com tratamento de falha de rede
 def carregar_dados():
     try:
         response = requests.get(url, timeout=10)
@@ -108,18 +102,9 @@ else:
 
                 for idx in st.session_state.atividades_exibidas:
                     nome_atividade = dados.loc[idx, "ATIVIDADE"]
-                    url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+                    url_img = f"https://questoesama.pages.dev/{nome_atividade}.jpg"
 
                     try:
-                        # 🔇 PROXY DESATIVADO — descomente se necessário futuramente
-                        # if "proxy_usuario" in st.session_state and "proxy_senha" in st.session_state and "proxy_servidor" in st.session_state:
-                        #     proxy_handler = urllib.request.ProxyHandler({
-                        #         'http': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}",
-                        #         'https': f"http://{st.session_state.proxy_usuario}:{st.session_state.proxy_senha}@{st.session_state.proxy_servidor}"
-                        #     })
-                        #     opener = urllib.request.build_opener(proxy_handler)
-                        #     urllib.request.install_opener(opener)
-
                         req = urllib.request.Request(
                             url_img,
                             headers={'User-Agent': 'Mozilla/5.0'}
@@ -147,15 +132,22 @@ else:
 
                 if imagens_baixadas:
                     pdf_bytes = pdf_document.write()
-                    st.download_button("📥 Baixar PDF Completo", pdf_bytes, "documento_completo.pdf", "application/pdf")
+                    nome_arquivo = f"{nome_professor}_{data.strftime('%Y-%m-%d')}.pdf"
+                    st.download_button("📥 Baixar PDF Completo", pdf_bytes, nome_arquivo, "application/pdf")
                     st.success("PDF criado com sucesso!")
 
-    
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state.clear()
             st.switch_page("QuestoesAMA.py")
 
-
-    
         if st.button("⚙️ Configurar Proxy"):
             st.switch_page("pages/Proxy.py")
+
+    st.markdown("<hr />", unsafe_allow_html=True)
+    st.success("Links das atividades selecionadas:")
+    col1, col2 = st.columns(2)
+    for count, idx in enumerate(st.session_state.atividades_exibidas):
+        nome = dados.loc[idx, "ATIVIDADE"]
+        url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+        with col1 if count % 2 == 0 else col2:
+            st.markdown(f"[{nome}]({url_img}) - Visualize esta atividade.")
