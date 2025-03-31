@@ -108,7 +108,8 @@ else:
 
                 for idx in st.session_state.atividades_exibidas:
                     nome_atividade = dados.loc[idx, "ATIVIDADE"]
-                    url_img = f"https://questoesama.pages.dev/img/{nome_atividade}.jpg"
+                    url_img = f"https://questoesama.pages.dev/img/{nome}.jpg"
+
 
                     try:
                         # 🔇 PROXY DESATIVADO — descomente se necessário futuramente
