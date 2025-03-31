@@ -149,7 +149,7 @@ if descritor != "Escolha...":
             nome = dados.loc[idx, "ATIVIDADE"]
             url_img = f"https://questoesama.pages.dev/{nome}.jpg"
             with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[{nome}]({url_img}) - Visualize esta atividade.")
+                st.markdown(f"[{nome}]({url_img}) - <span style='color:red;'>Visualize esta atividade.</span>", unsafe_allow_html=True)
 
         if st.button("PREENCHER CABEÇALHO"):
             st.switch_page("pages/AtividadeAMA.py")  # ou só "AtividadeAMA" dependendo de como está estruturado
