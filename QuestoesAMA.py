@@ -142,18 +142,21 @@ if descritor != "Escolha...":
         st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
         if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, idx in enumerate(st.session_state.atividades_exibidas):
-            nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[{nome}]({url_img}) - Visualize esta atividade.")
+            st.markdown("<hr />", unsafe_allow_html=True)
+            st.success("Links das atividades selecionadas:")
+            col1, col2 = st.columns(2)
 
-        # ✅ Botão fora do for
-        if st.button("PREENCHER CABEÇALHO", key="btn_cabecalho"):
-            st.switch_page("pages/AtividadeAMA.py")
+            for count, idx in enumerate(st.session_state.atividades_exibidas):
+                nome = dados.loc[idx, "ATIVIDADE"]
+                url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+                with col1 if count % 2 == 0 else col2:
+                    st.markdown(f"[{nome}]({url_img}) - Visualize esta atividade.")
+
+            # Botão fora do for e com key única
+            if st.button("PREENCHER CABEÇALHO", key="btn_cabecalho"):
+                st.switch_page("pages/AtividadeAMA.py")
+
+
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
