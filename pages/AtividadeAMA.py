@@ -99,13 +99,14 @@ with col_gerar:
 
                 form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
                 dados_forms = {
-                    "entry.2055031303": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "entry.1280209296": professor,
-                    "entry.1776849395": st.session_state.get("serie", ""),
-                    "entry.1049281286": st.session_state.get("descritor", ""),
-                    "entry.1929389299": st.session_state.get("habilidade", ""),
-                    "entry.422191746": str(len(st.session_state.atividades_exibidas)),
-                }
+    "entry.1932539975": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
+    "entry.1534567646": professor,
+    "entry.272957323": st.session_state.get("serie", ""),
+    "entry.465063798": st.session_state.get("descritor", ""),
+    "entry.537108716": st.session_state.get("habilidade", ""),
+    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
+}
+
 
                 try:
                     requests.post(form_url, data=dados_forms, headers=headers, timeout=5)
