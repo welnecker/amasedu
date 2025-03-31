@@ -147,7 +147,7 @@ if descritor != "Escolha...":
         col1, col2 = st.columns(2)
         for count, idx in enumerate(st.session_state.atividades_exibidas):
             nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome_atividade}.jpg"
+            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
             with col1 if count % 2 == 0 else col2:
                 st.markdown(f"[{nome}]({url_img})")
 
