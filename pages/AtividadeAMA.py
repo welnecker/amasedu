@@ -1,4 +1,4 @@
-# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF)
+# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para Google Forms)
 import streamlit as st
 import pandas as pd
 import requests
@@ -89,6 +89,22 @@ with col_gerar:
                 }
 
                 response = requests.post(url_api, json=payload)
+
+                # Envio automático para Google Forms (oculto)
+                form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
+                dados_forms = {
+                    "entry.2055031303": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
+                    "entry.1280209296": professor,
+                    "entry.1776849395": st.session_state.get("serie", ""),
+                    "entry.1049281286": st.session_state.get("descritor", ""),
+                    "entry.1929389299": st.session_state.get("habilidade", ""),
+                    "entry.422191746": str(len(st.session_state.atividades_exibidas)),
+                }
+                try:
+                    requests.post(form_url, data=dados_forms)
+                except:
+                    pass  # ignora falha silenciosamente
+
                 if response.status_code == 200:
                     st.download_button(
                         label="📥 Baixar PDF",
