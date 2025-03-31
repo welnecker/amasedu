@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
+from urllib.parse import urlencode
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -99,17 +100,19 @@ with col_gerar:
 
                 form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
                 dados_forms = {
-    "entry.1932539975": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
-    "entry.1534567646": professor,
-    "entry.272957323": st.session_state.get("serie", ""),
-    "entry.465063798": st.session_state.get("descritor", ""),
-    "entry.537108716": st.session_state.get("habilidade", ""),
-    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
-}
+                    "entry.1932539975": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
+                    "entry.1534567646": professor,
+                    "entry.272957323": st.session_state.get("serie", ""),
+                    "entry.465063798": st.session_state.get("descritor", ""),
+                    "entry.537108716": st.session_state.get("habilidade", ""),
+                    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
+                }
 
+                st.write("📋 Dados enviados para o Forms:", dados_forms)  # Para debug temporário
 
                 try:
-                    requests.post(form_url, data=dados_forms, headers=headers, timeout=5)
+                    payload_encoded = urlencode(dados_forms)
+                    requests.post(form_url, data=payload_encoded, headers=headers, timeout=5)
                 except Exception as e:
                     st.warning(f"⚠️ Falha ao enviar log para o formulário: {e}")
 
