@@ -19,14 +19,6 @@ if "atividades_exibidas" not in st.session_state or not st.session_state.ativida
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
 SHEET_NAME = "ATIVIDADES"
 
-# --- CARREGAMENTO DOS DADOS (garantindo persistência) ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
-response = requests.get(URL_PLANILHA)
-df = pd.read_csv(StringIO(response.text))
-df.columns = df.columns.str.strip()
-st.session_state["dados_carregados"] = df
-
-# --- Função para registrar respostas ---
 def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha):
     creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build("sheets", "v4", credentials=creds)
