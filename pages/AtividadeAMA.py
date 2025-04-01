@@ -91,30 +91,36 @@ with col_gerar:
 
                 response = requests.post(url_api, json=payload)
 
-                # Envio automático de log para Google Forms
+                # Envio automático para Google Forms (corrigido com IDs atuais)
+                dados_forms = {
+                    "entry.1368854772": professor,
+                    "entry.974489804": "Matemática",
+                    "entry.1741252485": "Ensino Fundamental",
+                    "entry.1530314189": st.session_state.get("serie", ""),
+                    "entry.1606156186": "1º Bimestre",
+                    "entry.1307551010": data.strftime("%d/%m/%Y"),
+                    "entry.1286342616": st.session_state.get("habilidade", ""),
+                    "entry.1399428661": "PDF gerado via app Streamlit",
+                    "entry.1770042575": "Notebook, projetor",
+                    "entry.493596244": ", ".join(atividades),
+                    "entry.1335884778": "Nenhuma",
+                    "entry.839337160": "Log enviado automaticamente via app",
+                    "submit": "Submit"
+                }
+
                 headers = {
-                    "User-Agent": "Mozilla/5.0",
+                    "Content-Type": "application/x-www-form-urlencoded",
                     "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "User-Agent": "Mozilla/5.0"
                 }
 
                 form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
-                dados_forms = {
-                    "entry.1932539975": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # DataHora
-                    "entry.1534567646": professor,
-                    "entry.272957323": st.session_state.get("serie", ""),
-                    "entry.465063798": st.session_state.get("descritor", ""),
-                    "entry.537108716": st.session_state.get("habilidade", ""),
-                    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
-                }
-
-                st.write("📋 Dados enviados para o Forms:", dados_forms)  # Para debug temporário
 
                 try:
                     payload_encoded = urlencode(dados_forms)
                     requests.post(form_url, data=payload_encoded, headers=headers, timeout=5)
                 except Exception as e:
-                    st.warning(f"⚠️ Falha ao enviar log para o formulário: {e}")
+                    st.warning(f"⚠️ Erro ao enviar log ao Google Forms: {e}")
 
                 if response.status_code == 200:
                     st.download_button(
