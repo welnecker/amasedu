@@ -92,24 +92,31 @@ with col_gerar:
 
                 # Envio de log ao Google Forms
                 dados_forms = {
-                    "entry.1932539975": escola,  # Escola
-                    "entry.1534567646": professor,  # Professor
+                    "entry.1932539975": escola,
+                    "entry.1534567646": professor,
                     "entry.272957323": st.session_state.get("serie", ""),
                     "entry.465063798": st.session_state.get("descritor", ""),
                     "entry.537108716": st.session_state.get("habilidade", ""),
                     "entry.633190190": str(len(st.session_state.atividades_exibidas)),
+                    "entry.1307551010": data.strftime("%d/%m/%Y"),
+                    "entry.1286342616": ", ".join(atividades)
                 }
 
                 headers = {
                     "Content-Type": "application/x-www-form-urlencoded",
                     "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
-                    "User-Agent": "Mozilla/5.0"
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
                 }
 
                 form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
+
                 try:
                     payload_encoded = urlencode(dados_forms)
-                    requests.post(form_url, data=payload_encoded, headers=headers, timeout=5)
+                    response_forms = requests.post(form_url, data=payload_encoded, headers=headers, timeout=10)
+                    if response_forms.status_code == 200:
+                        st.success("Log enviado com sucesso para o Google Forms!")
+                    else:
+                        st.warning(f"Falha ao enviar log. Status code: {response_forms.status_code}")
                 except Exception as e:
                     st.warning(f"⚠️ Erro ao enviar log: {e}")
 
