@@ -10,6 +10,27 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
+# --- CARREGAMENTO DA PLANILHA ---
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+
+@st.cache_data(show_spinner=False)
+def carregar_dados():
+    try:
+        response = requests.get(URL_PLANILHA, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception:
+        return None
+
+# Carrega os dados da planilha, se ainda não estiverem carregados
+if "dados_carregados" not in st.session_state:
+    st.session_state["dados_carregados"] = carregar_dados()
+
+dados = st.session_state["dados_carregados"]
+
+
 # --- CARREGAMENTO DAS IMAGENS SELECIONADAS ---
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
