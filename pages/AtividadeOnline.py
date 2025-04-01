@@ -25,7 +25,7 @@ def carregar_dados_por_codigo(secrets, spreadsheet_id, sheet_name, codigo):
     ).execute()
     valores = result.get("values", [])
     for linha in valores:
-        if len(linha) >= 7 and linha[0] == codigo:
+        if len(linha) >= 7 and linha[0].strip().lower() == codigo.strip().lower():
             atividades = linha[1].split(",")
             escola = linha[2]
             serie = linha[3]
@@ -33,7 +33,7 @@ def carregar_dados_por_codigo(secrets, spreadsheet_id, sheet_name, codigo):
     return None, None, None
 
 # --- FORMULÁRIO DE ACESSO VIA CÓDIGO ---
-codigo = st.text_input("Digite o código da atividade recebida do professor:")
+codigo = st.text_input("Digite o código da atividade recebida do professor:", value="")
 if not codigo:
     st.info("Insira o código para acessar as atividades.")
     st.stop()
@@ -59,15 +59,17 @@ if not aluno:
 respostas = []
 st.markdown("---")
 for nome in atividades:
-    url_img = f"https://questoesama.pages.dev/{nome.strip()}.jpg"
-    st.image(url_img, caption=nome.strip(), use_container_width=True)
-    resposta = st.radio(
-        f"Escolha a alternativa correta para a atividade {nome.strip()}:",
-        options=["A", "B", "C", "D", "E"],
-        index=None,
-        key=f"resp_{nome.strip()}"
-    )
-    respostas.append((nome.strip(), resposta))
+    nome = nome.strip()
+    if nome:
+        url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+        st.image(url_img, caption=nome, use_container_width=True)
+        resposta = st.radio(
+            f"Escolha a alternativa correta para a atividade {nome}:",
+            options=["A", "B", "C", "D", "E"],
+            index=None,
+            key=f"resp_{nome}"
+        )
+        respostas.append((nome, resposta))
 
 # --- ENVIO PARA PLANILHA DE RESPOSTAS ---
 def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha):
