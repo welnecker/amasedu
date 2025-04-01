@@ -15,29 +15,18 @@ if "atividades_exibidas" not in st.session_state or not st.session_state.ativida
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
 
-# --- CARREGAMENTO DOS DADOS DAS ATIVIDADES ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
-@st.cache_data
-
-def carregar_dados():
-    try:
-        response = requests.get(URL_PLANILHA, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception:
-        return None
-
-dados = carregar_dados()
-if dados is None:
-    st.error("Erro ao carregar dados das atividades.")
-    st.stop()
-
-# --- CONFIG PLANILHA DE RESPOSTAS ---
+# --- CARREGAMENTO DA PLANILHA ---
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
 SHEET_NAME = "ATIVIDADES"
 
+# --- CARREGAMENTO DOS DADOS (garantindo persistência) ---
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+response = requests.get(URL_PLANILHA)
+df = pd.read_csv(StringIO(response.text))
+df.columns = df.columns.str.strip()
+st.session_state["dados_carregados"] = df
+
+# --- Função para registrar respostas ---
 def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha):
     creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build("sheets", "v4", credentials=creds)
@@ -58,16 +47,20 @@ if not aluno:
     st.info("Digite o nome do aluno para prosseguir.")
     st.stop()
 
-# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA (COM MÚLTIPLA ESCOLHA) ---
+# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
 st.markdown("---")
 respostas = []
-opcoes = ["A", "B", "C", "D", "E"]
-
+dados = st.session_state.get("dados_carregados")
 for idx in st.session_state.atividades_exibidas:
     nome = dados.loc[idx, "ATIVIDADE"]
     url_img = f"https://questoesama.pages.dev/{nome}.jpg"
     st.image(url_img, caption=nome, use_container_width=True)
-    resposta = st.radio(f"Escolha a resposta para a atividade {nome}:", opcoes, key=f"resposta_{idx}")
+    resposta = st.radio(
+        f"Escolha a alternativa correta para a atividade {nome}:",
+        options=["A", "B", "C", "D", "E"],
+        index=None,
+        key=f"resp_{nome}"
+    )
     respostas.append((nome, resposta))
 
 if st.button("📨 Enviar Respostas"):
