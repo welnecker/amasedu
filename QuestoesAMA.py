@@ -1,4 +1,4 @@
-# app.py (página inicial)
+# app.py (página inicial com proteção por senha para professores)
 import streamlit as st
 import pandas as pd
 import requests
@@ -6,9 +6,23 @@ from io import StringIO
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-# Agora sim:######
-st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
+# --- BLOQUEIO POR SENHA ---
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
 
+if not st.session_state.autenticado:
+    st.markdown("### Área restrita para professores")
+    senha = st.text_input("Digite a senha para continuar:", type="password")
+    if senha == "sedu":
+        st.session_state.autenticado = True
+        st.success("Acesso autorizado!")
+        st.rerun()
+    elif senha:
+        st.error("Senha incorreta. Tente novamente.")
+    st.stop()
+
+# Versão
+st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
 # --- ESTILO VISUAL ---
 st.markdown(
