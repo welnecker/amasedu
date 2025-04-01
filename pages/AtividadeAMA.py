@@ -1,12 +1,12 @@
-# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para aba LOG do Google Sheets)
+# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para Google Sheets)
 import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
 from urllib.parse import urlencode
-import gspread
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -38,6 +38,7 @@ st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 # --- CARREGAMENTO DA PLANILHA ---
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
+@st.cache_data
 def carregar_dados():
     try:
         response = requests.get(URL_PLANILHA, timeout=10)
@@ -72,32 +73,31 @@ for i, idx in enumerate(st.session_state.atividades_exibidas):
     with col1 if i % 2 == 0 else col2:
         st.markdown(f"- **Atividade:** {nome}")
 
+# --- Função para registrar log diretamente no Google Sheets ---
+def registrar_log_google_sheets(dados_log):
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(st.secrets["GOOGLE_SERVICE_ACCOUNT"], scopes=scope)
+    service = build("sheets", "v4", credentials=creds)
+
+    linha = [[
+        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        dados_log["Escola"],
+        dados_log["Professor"],
+        dados_log["Série"],
+        dados_log["Descritor"],
+        dados_log["Habilidades"],
+        dados_log["TotalQuestoes"]
+    ]]
+
+    service.spreadsheets().values().append(
+        spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+        range="LOG!A1",
+        valueInputOption="USER_ENTERED",
+        insertDataOption="INSERT_ROWS",
+        body={"values": linha}
+    ).execute()
+
 col_gerar, col_cancelar = st.columns([1, 1])
-
-def registrar_log_na_planilha(dados_log):
-    try:
-        escopos = ['https://www.googleapis.com/auth/spreadsheets']
-        creds = Credentials.from_service_account_file(
-            'apt-memento-450610-v4-8291f78192e8.json', scopes=escopos
-        )
-        client = gspread.authorize(creds)
-
-        spreadsheet = client.open_by_key("17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8")
-        aba_log = spreadsheet.worksheet("LOG")
-
-        nova_linha = [
-            dados_log["Escola"],
-            dados_log["Professor"],
-            dados_log["Série"],
-            dados_log["Descritor"],
-            dados_log["Habilidades"],
-            dados_log["TotalQuestoes"]
-        ]
-        aba_log.append_row(nova_linha)
-        st.success("📋 Log registrado com sucesso na planilha!")
-
-    except Exception as e:
-        st.error(f"Erro ao registrar log: {e}")
 
 with col_gerar:
     if st.button("📄 GERAR ATIVIDADE"):
@@ -117,6 +117,18 @@ with col_gerar:
                 }
                 response = requests.post(url_api, json=payload)
 
+                # REGISTRO DE LOG NO GOOGLE SHEETS
+                dados_log = {
+                    "Escola": escola,
+                    "Professor": professor,
+                    "Série": st.session_state.get("serie", ""),
+                    "Descritor": st.session_state.get("descritor", ""),
+                    "Habilidades": st.session_state.get("habilidade", ""),
+                    "TotalQuestoes": len(st.session_state.atividades_exibidas)
+                }
+
+                registrar_log_google_sheets(dados_log)
+
                 if response.status_code == 200:
                     st.download_button(
                         label="📥 Baixar PDF",
@@ -125,20 +137,10 @@ with col_gerar:
                         mime="application/pdf"
                     )
                     st.success("PDF gerado com sucesso!")
-
-                    dados_log = {
-                        "Escola": escola,
-                        "Professor": professor,
-                        "Série": st.session_state.get("serie", ""),
-                        "Descritor": st.session_state.get("descritor", ""),
-                        "Habilidades": st.session_state.get("habilidade", ""),
-                        "TotalQuestoes": str(len(st.session_state.atividades_exibidas))
-                    }
-                    registrar_log_na_planilha(dados_log)
                 else:
                     st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
             except Exception as e:
-                st.error(f"Erro de conexão com o gerador de PDF: {str(e)}")
+                st.error(f"Erro de conexão ou registro de log: {str(e)}")
 
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
