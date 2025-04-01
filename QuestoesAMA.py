@@ -6,6 +6,8 @@ from io import StringIO
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
+st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
+
 # --- ESTILO VISUAL ---
 st.markdown(
     """
