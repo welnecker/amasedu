@@ -1,10 +1,12 @@
-# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para Google Forms)
+# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para aba LOG do Google Sheets)
 import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
 from urllib.parse import urlencode
+import gspread
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -72,13 +74,38 @@ for i, idx in enumerate(st.session_state.atividades_exibidas):
 
 col_gerar, col_cancelar = st.columns([1, 1])
 
+def registrar_log_na_planilha(dados_log):
+    try:
+        escopos = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = Credentials.from_service_account_file(
+            'apt-memento-450610-v4-8291f78192e8.json', scopes=escopos
+        )
+        client = gspread.authorize(creds)
+
+        spreadsheet = client.open_by_key("17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8")
+        aba_log = spreadsheet.worksheet("LOG")
+
+        nova_linha = [
+            dados_log["Escola"],
+            dados_log["Professor"],
+            dados_log["Série"],
+            dados_log["Descritor"],
+            dados_log["Habilidades"],
+            dados_log["TotalQuestoes"]
+        ]
+        aba_log.append_row(nova_linha)
+        st.success("📋 Log registrado com sucesso na planilha!")
+
+    except Exception as e:
+        st.error(f"Erro ao registrar log: {e}")
+
 with col_gerar:
     if st.button("📄 GERAR ATIVIDADE"):
         if not escola or not professor:
             st.warning("Preencha todos os campos antes de gerar o PDF.")
             st.stop()
 
-        with st.spinner("Gerando PDF e enviando log..."):
+        with st.spinner("Gerando PDF e registrando log..."):
             try:
                 url_api = "https://amasedu.onrender.com/gerar-pdf"
                 atividades = [dados.loc[idx, "ATIVIDADE"] for idx in st.session_state.atividades_exibidas]
@@ -90,36 +117,6 @@ with col_gerar:
                 }
                 response = requests.post(url_api, json=payload)
 
-                # Envio de log ao Google Forms
-                dados_forms = {
-                    "entry.1932539975": escola,
-                    "entry.1534567646": professor,
-                    "entry.272957323": st.session_state.get("serie", ""),
-                    "entry.465063798": st.session_state.get("descritor", ""),
-                    "entry.537108716": st.session_state.get("habilidade", ""),
-                    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
-                    "entry.1307551010": data.strftime("%d/%m/%Y"),
-                    "entry.1286342616": ", ".join(atividades)
-                }
-
-                headers = {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                }
-
-                form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
-
-                try:
-                    payload_encoded = urlencode(dados_forms)
-                    response_forms = requests.post(form_url, data=payload_encoded, headers=headers, timeout=10)
-                    if response_forms.status_code == 200:
-                        st.success("Log enviado com sucesso para o Google Forms!")
-                    else:
-                        st.warning(f"Falha ao enviar log. Status code: {response_forms.status_code}")
-                except Exception as e:
-                    st.warning(f"⚠️ Erro ao enviar log: {e}")
-
                 if response.status_code == 200:
                     st.download_button(
                         label="📥 Baixar PDF",
@@ -128,6 +125,16 @@ with col_gerar:
                         mime="application/pdf"
                     )
                     st.success("PDF gerado com sucesso!")
+
+                    dados_log = {
+                        "Escola": escola,
+                        "Professor": professor,
+                        "Série": st.session_state.get("serie", ""),
+                        "Descritor": st.session_state.get("descritor", ""),
+                        "Habilidades": st.session_state.get("habilidade", ""),
+                        "TotalQuestoes": str(len(st.session_state.atividades_exibidas))
+                    }
+                    registrar_log_na_planilha(dados_log)
                 else:
                     st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
             except Exception as e:
