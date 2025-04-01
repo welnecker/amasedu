@@ -1,4 +1,4 @@
-# AtividadeOnline.py (Nova avaliação alternativa com acesso via código gerado)
+# AtividadeOnline.py (Nova avaliação alternativa com acesso via código fixo "ama25")
 import streamlit as st
 import pandas as pd
 import requests
@@ -32,18 +32,14 @@ def carregar_dados_por_codigo(secrets, spreadsheet_id, sheet_name, codigo):
             return atividades, escola, serie
     return None, None, None
 
-# --- FORMULÁRIO DE ACESSO VIA CÓDIGO ---
-codigo = st.text_input("Digite o código da atividade recebida do professor:", value="")
-if not codigo:
-    st.info("Insira o código para acessar as atividades.")
-    st.stop()
-
+# --- FORMULÁRIO DE ACESSO COM CÓDIGO FIXO ---
+codigo = "ama25"
 atividades, escola, serie = carregar_dados_por_codigo(
     st.secrets["gcp_service_account"], SPREADSHEET_ID, SHEET_NAME, codigo
 )
 
 if not atividades:
-    st.error("Código inválido ou não encontrado.")
+    st.error("Atividades não encontradas. O professor ainda não gerou a atividade.")
     st.stop()
 
 # --- FORMULÁRIO DO ALUNO ---
