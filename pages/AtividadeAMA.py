@@ -8,8 +8,8 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
-st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
+st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
 # --- ESTILO VISUAL ---
 st.markdown(
@@ -81,13 +81,13 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
     service = build("sheets", "v4", credentials=creds)
 
     linha = [[
-        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-        dados_log["Escola"],
-        dados_log["Professor"],
-        dados_log["Série"],
-        dados_log["Descritor"],
-        dados_log["Habilidades"],
-        dados_log["TotalQuestoes"]
+        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),  # Coluna A: data/hora
+        dados_log["Escola"],                            # Coluna B
+        dados_log["Professor"],                         # Coluna C
+        dados_log["Série"],                              # Coluna D
+        dados_log["Habilidades"],                        # Coluna E
+        dados_log["Descritor"],                          # Coluna F
+        dados_log["TotalQuestoes"]                       # Coluna G
     ]]
 
     service.spreadsheets().values().append(
