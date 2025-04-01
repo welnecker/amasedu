@@ -1,27 +1,85 @@
-# AtividadeOnline.py (Geração de link com QR Code para formulário único)
+# AtividadeOnline.py (Formulário interativo no próprio app)
 import streamlit as st
-import qrcode
-from io import BytesIO
+import pandas as pd
+import requests
+from io import StringIO
+from datetime import datetime
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-st.subheader("Acesse a atividade gerada pelo professor")
+# --- CAMPOS DO CABEÇALHO ---
+st.subheader("Identificação do aluno")
+nome_aluno = st.text_input("Nome do Aluno:")
+escola = st.text_input("Escola:")
+serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
 
-# URL do Google Forms padrão (único para todos os alunos)
-URL_GOOGLE_FORMS = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform"
+# --- CARREGAMENTO DAS ATIVIDADES GERADAS PELO PROFESSOR ---
+URL_ATIVIDADES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=1069213106&single=true&output=csv"
 
-# Gerar QR Code
-qr = qrcode.make(URL_GOOGLE_FORMS)
-buffer = BytesIO()
-qr.save(buffer, format="PNG")
-buffer.seek(0)
+@st.cache_data(show_spinner=False)
+def carregar_atividades():
+    try:
+        response = requests.get(URL_ATIVIDADES, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip()
+        return df
+    except:
+        return pd.DataFrame()
 
-# Exibir QR Code e link
-st.image(buffer, caption="Escaneie o QR Code para responder à atividade", use_container_width=True)
-st.markdown(f"Ou acesse diretamente: [Clique aqui para abrir o formulário]({URL_GOOGLE_FORMS})")
+dados = carregar_atividades()
 
-# Botão para copiar o link para a área de transferência
+if dados.empty:
+    st.warning("Nenhuma atividade disponível no momento. Aguarde o professor gerar a atividade.")
+    st.stop()
+
 st.markdown("---")
-st.code(URL_GOOGLE_FORMS, language="text")
-st.markdown("Copie o link acima para enviar aos alunos (via WhatsApp, e-mail, etc).")
+st.subheader("Responda às atividades:")
+
+respostas = {}
+for idx, row in dados.iterrows():
+    atividade = row["ATIVIDADE"]
+    url = f"https://questoesama.pages.dev/{atividade}.jpg"
+    st.image(url, caption=f"Atividade {idx+1}", use_container_width=True)
+    resposta = st.radio(f"Escolha a alternativa correta para a atividade {idx+1}:", ["A", "B", "C", "D", "E"], key=f"resposta_{idx}", index=None)
+    respostas[atividade] = resposta
+
+# --- ENVIO DAS RESPOSTAS PARA O GOOGLE SHEETS ---
+if st.button("📤 Enviar respostas"):
+    if not nome_aluno or escola == "" or serie == "Escolha...":
+        st.warning("Por favor, preencha todos os campos antes de enviar.")
+        st.stop()
+
+    try:
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+        service = build("sheets", "v4", credentials=creds)
+
+        linhas = []
+        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        for atividade, resposta in respostas.items():
+            linhas.append([
+                timestamp,
+                nome_aluno,
+                escola,
+                serie,
+                atividade,
+                resposta
+            ])
+
+        service.spreadsheets().values().append(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="ATIVIDADES!A1",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body={"values": linhas}
+        ).execute()
+
+        st.success("Respostas enviadas com sucesso! Obrigado por participar.")
+    except Exception as e:
+        st.error(f"Erro ao enviar respostas: {e}")
