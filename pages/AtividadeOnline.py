@@ -1,11 +1,15 @@
-# AtividadeOnline.py (Nova avaliação alternativa com acesso via código fixo "ama25")
+# AtividadeOnline.py (Geração de QR Code e Google Forms com base na atividade gerada)
 import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
+import qrcode
+from PIL import Image
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+import tempfile
+import base64
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
@@ -13,94 +17,37 @@ st.title("💡 Atividade Online - AMA 2025")
 # --- PARÂMETROS DA PLANILHA ---
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
 SHEET_NAME = "ATIVIDADES_GERADAS"
-SHEET_RESPOSTAS = "ATIVIDADES"
 
-# --- FUNÇÃO: LER DADOS POR CÓDIGO ---
-def carregar_dados_por_codigo(secrets, spreadsheet_id, sheet_name, codigo):
-    creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-    service = build("sheets", "v4", credentials=creds)
-    result = service.spreadsheets().values().get(
-        spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A2:G",
-    ).execute()
-    valores = result.get("values", [])
-    for linha in valores:
-        if len(linha) >= 7 and linha[0].strip().lower() == codigo.strip().lower():
-            atividades = linha[1].split(",")
-            escola = linha[2]
-            serie = linha[3]
-            return atividades, escola, serie
-    return None, None, None
+# --- FORMULÁRIO DO GOOGLE FORMS ---
+FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform"
+
+# --- FUNÇÃO: GERAR QR CODE ---
+def gerar_qrcode(url):
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill="black", back_color="white")
+    return img
 
 # --- FORMULÁRIO DE ACESSO COM CÓDIGO FIXO ---
 codigo = "ama25"
-atividades, escola, serie = carregar_dados_por_codigo(
-    st.secrets["gcp_service_account"], SPREADSHEET_ID, SHEET_NAME, codigo
-)
 
-if not atividades:
-    st.error("Atividades não encontradas. O professor ainda não gerou a atividade.")
-    st.stop()
+# Monta o link com código como parâmetro se necessário
+form_url = FORM_BASE + f"?usp=pp_url&entry.1000000={codigo}"
 
-# --- FORMULÁRIO DO ALUNO ---
-st.markdown(f"### Escola: {escola} | Série: {serie}")
-aluno = st.text_input("Nome do Aluno:")
-data = st.date_input("Data:", value=datetime.today())
+# Gera e exibe o QR Code e o link
+st.subheader("📲 Compartilhe com seus alunos")
+img_qr = gerar_qrcode(form_url)
+temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+img_qr.save(temp_file.name)
 
-if not aluno:
-    st.info("Digite o nome do aluno para prosseguir.")
-    st.stop()
+with open(temp_file.name, "rb") as f:
+    img_bytes = f.read()
+    b64_img = base64.b64encode(img_bytes).decode()
+    st.image(img_bytes, caption="Escaneie com a câmera do celular", use_column_width=True)
 
-# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
-respostas = []
-st.markdown("---")
-for nome in atividades:
-    nome = nome.strip()
-    if nome:
-        url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-        st.image(url_img, caption=nome, use_container_width=True)
-        resposta = st.radio(
-            f"Escolha a alternativa correta para a atividade {nome}:",
-            options=["A", "B", "C", "D", "E"],
-            index=None,
-            key=f"resp_{nome}"
-        )
-        respostas.append((nome, resposta))
-
-# --- ENVIO PARA PLANILHA DE RESPOSTAS ---
-def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha):
-    creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-    service = build("sheets", "v4", credentials=creds)
-    service.spreadsheets().values().append(
-        spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A1",
-        valueInputOption="USER_ENTERED",
-        insertDataOption="INSERT_ROWS",
-        body={"values": [linha]}
-    ).execute()
-
-if st.button("📨 Enviar Respostas"):
-    with st.spinner("Enviando para a planilha..."):
-        try:
-            for nome_atividade, resposta in respostas:
-                linha = [
-                    datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    aluno,
-                    escola,
-                    serie,
-                    nome_atividade,
-                    resposta,
-                    data.strftime("%d/%m/%Y")
-                ]
-                registrar_resposta_google_sheets(
-                    st.secrets["gcp_service_account"],
-                    SPREADSHEET_ID,
-                    SHEET_RESPOSTAS,
-                    linha
-                )
-            st.success("Todas as respostas foram enviadas com sucesso!")
-        except Exception as e:
-            st.error(f"Erro ao enviar respostas: {str(e)}")
+st.markdown(f"👉 Ou clique para acessar o formulário: [Abrir formulário]({form_url})")
+st.info("Os alunos devem preencher este formulário com suas respostas.")
 
 if st.button("🔁 Voltar ao início"):
     st.session_state.clear()
