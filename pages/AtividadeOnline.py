@@ -18,5 +18,10 @@ qr.save(buffer, format="PNG")
 buffer.seek(0)
 
 # Exibir QR Code e link
-st.image(buffer, caption="Escaneie o QR Code para responder a atividade", use_container_width=True)
+st.image(buffer, caption="Escaneie o QR Code para responder à atividade", use_container_width=True)
 st.markdown(f"Ou acesse diretamente: [Clique aqui para abrir o formulário]({URL_GOOGLE_FORMS})")
+
+# Botão para copiar o link para a área de transferência
+st.markdown("---")
+st.code(URL_GOOGLE_FORMS, language="text")
+st.markdown("Copie o link acima para enviar aos alunos (via WhatsApp, e-mail, etc).")
