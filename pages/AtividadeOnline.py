@@ -12,11 +12,8 @@ import string
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- GERAÇÃO AUTOMÁTICA DE CÓDIGO PELO PROFESSOR (OCULTO PARA O ALUNO) ---
-if "codigo_gerado" not in st.session_state:
-    st.session_state.codigo_gerado = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-
-codigo_atividade = st.session_state.codigo_gerado
+# --- O CÓDIGO DA ATIVIDADE É PASSADO COMO PARÂMETRO SECRETO NO LINK (EX: ?codigo=x4a2zq) ---
+codigo_atividade = st.query_params.get("codigo", "")
 
 # --- CAMPOS DO CABEÇALHO ---
 st.subheader("Identificação do aluno")
@@ -39,6 +36,10 @@ def carregar_atividades():
         return pd.DataFrame()
 
 dados = carregar_atividades()
+
+if "CODIGO" not in dados.columns:
+    st.error("A planilha não contém a coluna 'CODIGO'. Verifique a aba ATIVIDADES_GERADAS.")
+    st.stop()
 
 dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
 
