@@ -7,6 +7,8 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
+st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
+
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
 # --- ESTILO VISUAL ---
