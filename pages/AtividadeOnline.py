@@ -1,4 +1,4 @@
-# AtividadeOnline.py (Formulário interativo com código da atividade)
+# AtividadeOnline.py (Formulário interativo sem exibir código)
 import streamlit as st
 import pandas as pd
 import requests
@@ -6,16 +6,17 @@ from io import StringIO
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+import random
+import string
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- ENTRADA DO CÓDIGO DA ATIVIDADE GERADA PELO PROFESSOR ---
-codigo_atividade = st.text_input("Digite o código da atividade fornecido pelo professor:")
+# --- GERAÇÃO AUTOMÁTICA DE CÓDIGO PELO PROFESSOR (OCULTO PARA O ALUNO) ---
+if "codigo_gerado" not in st.session_state:
+    st.session_state.codigo_gerado = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
 
-if not codigo_atividade:
-    st.info("Por favor, digite o código da atividade para visualizar as questões.")
-    st.stop()
+codigo_atividade = st.session_state.codigo_gerado
 
 # --- CAMPOS DO CABEÇALHO ---
 st.subheader("Identificação do aluno")
@@ -39,11 +40,10 @@ def carregar_atividades():
 
 dados = carregar_atividades()
 
-# Filtra pelas atividades do código digitado
 dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
 
 if dados_filtrados.empty:
-    st.warning("Nenhuma atividade encontrada para este código. Verifique com o professor.")
+    st.warning("Nenhuma atividade encontrada para esta sessão. Aguarde o professor gerar a atividade.")
     st.stop()
 
 st.markdown("---")
