@@ -87,3 +87,4 @@ if st.button("📄 Registrar Aula e Enviar"):
         )
 
         st.success("Registro completo com sucesso!")
+#
