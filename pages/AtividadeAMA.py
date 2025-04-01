@@ -4,10 +4,8 @@ import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
-from urllib.parse import urlencode
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-import json
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -76,10 +74,8 @@ for i, idx in enumerate(st.session_state.atividades_exibidas):
         st.markdown(f"- **Atividade:** {nome}")
 
 # --- Função para registrar log diretamente no Google Sheets ---
-def registrar_log_google_sheets(dados_log):
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
-    info = st.secrets["gcp_service_account"]
-    creds = Credentials.from_service_account_info(info, scopes=scope)
+def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
+    creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build("sheets", "v4", credentials=creds)
 
     linha = [[
@@ -93,7 +89,7 @@ def registrar_log_google_sheets(dados_log):
     ]]
 
     service.spreadsheets().values().append(
-        spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+        spreadsheetId=spreadsheet_id,
         range="LOG!A1",
         valueInputOption="USER_ENTERED",
         insertDataOption="INSERT_ROWS",
@@ -120,7 +116,6 @@ with col_gerar:
                 }
                 response = requests.post(url_api, json=payload)
 
-                # REGISTRO DE LOG NO GOOGLE SHEETS
                 dados_log = {
                     "Escola": escola,
                     "Professor": professor,
@@ -130,7 +125,11 @@ with col_gerar:
                     "TotalQuestoes": len(st.session_state.atividades_exibidas)
                 }
 
-                registrar_log_google_sheets(dados_log)
+                registrar_log_google_sheets(
+                    st.secrets["gcp_service_account"],
+                    "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                    dados_log
+                )
 
                 if response.status_code == 200:
                     st.download_button(
