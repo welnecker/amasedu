@@ -7,6 +7,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+import json
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -39,6 +40,7 @@ st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
 @st.cache_data
+
 def carregar_dados():
     try:
         response = requests.get(URL_PLANILHA, timeout=10)
@@ -76,7 +78,8 @@ for i, idx in enumerate(st.session_state.atividades_exibidas):
 # --- Função para registrar log diretamente no Google Sheets ---
 def registrar_log_google_sheets(dados_log):
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(st.secrets["GOOGLE_SERVICE_ACCOUNT"], scopes=scope)
+    info = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(info, scopes=scope)
     service = build("sheets", "v4", credentials=creds)
 
     linha = [[
