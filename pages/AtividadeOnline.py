@@ -24,19 +24,20 @@ def carregar_dados():
     except Exception:
         return None
 
-# Carrega os dados da planilha, se ainda não estiverem carregados
 if "dados_carregados" not in st.session_state:
     st.session_state["dados_carregados"] = carregar_dados()
 
 dados = st.session_state["dados_carregados"]
-
+if dados is None:
+    st.error("Erro ao carregar dados da planilha.")
+    st.stop()
 
 # --- CARREGAMENTO DAS IMAGENS SELECIONADAS ---
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
 
-# --- CARREGAMENTO DA PLANILHA ---
+# --- CARREGAMENTO DA PLANILHA PARA RESPOSTAS ---
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
 SHEET_NAME = "ATIVIDADES"
 
@@ -51,19 +52,20 @@ def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha)
         body={"values": [linha]}
     ).execute()
 
-# --- FORMULÁRIO ---
+# --- FORMULÁRIO CABEÇALHO ---
 st.markdown("Preencha abaixo para responder às atividades online:")
+escola = st.text_input("Escola:")
+serie = st.text_input("Série:")
 aluno = st.text_input("Nome do Aluno:")
 data = st.date_input("Data:", value=datetime.today())
 
-if not aluno:
-    st.info("Digite o nome do aluno para prosseguir.")
+if not aluno or not escola or not serie:
+    st.info("Preencha todos os campos antes de prosseguir.")
     st.stop()
 
 # --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
 st.markdown("---")
 respostas = []
-dados = st.session_state.get("dados_carregados")
 for idx in st.session_state.atividades_exibidas:
     nome = dados.loc[idx, "ATIVIDADE"]
     url_img = f"https://questoesama.pages.dev/{nome}.jpg"
@@ -83,6 +85,8 @@ if st.button("📨 Enviar Respostas"):
                 linha = [
                     datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     aluno,
+                    escola,
+                    serie,
                     nome_atividade,
                     resposta,
                     data.strftime("%d/%m/%Y")
