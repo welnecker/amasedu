@@ -1,90 +1,132 @@
+# AtividadeAMA.py (Streamlit integrado com FastAPI para gerar PDF + envio automático para Google Forms)
 import streamlit as st
+import pandas as pd
 import requests
-from urllib.parse import urlencode
+from io import StringIO
 from datetime import datetime
-from io import BytesIO
-from fpdf import FPDF
+from urllib.parse import urlencode
 
-st.set_page_config(page_title="Registro de Aula", page_icon="📝")
+st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-st.title("Registro de Aula - AMA 2025")
-
-# Inputs do formulário
-professor = st.text_input("Professor:")
-disciplina = st.text_input("Disciplina:")
-curso = st.text_input("Curso:")
-turma = st.text_input("Turma:")
-periodo = st.text_input("Período:")
-data = st.date_input("Data da Aula:", value=datetime.today())
-conteudo = st.text_area("Conteúdo ministrado:")
-metodologia = st.text_area("Metodologia:")
-recursos = st.text_area("Recursos utilizados:")
-atividades = st.text_area("Atividades realizadas:")
-dificuldades = st.text_area("Dificuldades apresentadas pelos alunos:")
-observacoes = st.text_area("Observações:")
-
-# Função de envio para o Google Forms
-def enviar_para_google_forms(dados):
-    form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
-        "User-Agent": "Mozilla/5.0"
+# --- ESTILO VISUAL ---
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://questoesama.pages.dev/img/fundo.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center top;
+        background-attachment: fixed;
     }
+    .main > div {
+        background-color: rgba(255, 255, 255, 0.85);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-top: 100px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
+
+# --- CARREGAMENTO DA PLANILHA ---
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+
+def carregar_dados():
     try:
-        payload_encoded = urlencode(dados)
-        response = requests.post(form_url, data=payload_encoded, headers=headers, timeout=10)
-        if response.status_code == 200:
-            st.success("Dados enviados com sucesso para o Google Forms!")
-        else:
-            st.warning(f"Falha ao enviar dados. Status code: {response.status_code}")
-    except Exception as e:
-        st.error(f"Erro ao enviar dados para o Google Forms: {str(e)}")
+        response = requests.get(URL_PLANILHA, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception:
+        return None
 
-# Função simples para gerar PDF de teste
-def gerar_pdf(professor, data, conteudo):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Registro de Aula - {professor}", ln=True)
-    pdf.cell(200, 10, txt=f"Data: {data.strftime('%d/%m/%Y')}", ln=True)
-    pdf.ln(5)
-    pdf.multi_cell(200, 10, txt=f"Conteúdo: {conteudo}")
-    buffer = BytesIO()
-    pdf.output(buffer)
-    return buffer.getvalue()
+dados = carregar_dados()
+if dados is None:
+    st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
+    if st.button("🔄 Tentar novamente"):
+        st.rerun()
+    st.stop()
 
-# Botão principal
-if st.button("📄 Registrar Aula e Enviar"):
-    if not professor or not conteudo:
-        st.warning("Preencha os campos obrigatórios.")
-        st.stop()
+# --- CAMPOS DO CABEÇALHO ---
+st.subheader("Preencha o cabeçalho da atividade:")
+escola = st.text_input("Escola:")
+data = st.date_input("Data:", value=datetime.today())
+professor = st.text_input("Nome do Professor(a):")
 
-    with st.spinner("Enviando dados e gerando PDF..."):
-        dados_forms = {
-            "entry.1368854772": professor,
-            "entry.974489804": disciplina,
-            "entry.1741252485": curso,
-            "entry.1530314189": turma,
-            "entry.1606156186": periodo,
-            "entry.1307551010": data.strftime("%d/%m/%Y"),
-            "entry.1286342616": conteudo,
-            "entry.1399428661": metodologia,
-            "entry.1770042575": recursos,
-            "entry.493596244": atividades,
-            "entry.1335884778": dificuldades,
-            "entry.839337160": observacoes,
-        }
+if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
+    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
+    st.stop()
 
-        enviar_para_google_forms(dados_forms)
+st.success("Atividades selecionadas:")
+col1, col2 = st.columns(2)
+for i, idx in enumerate(st.session_state.atividades_exibidas):
+    nome = dados.loc[idx, "ATIVIDADE"]
+    with col1 if i % 2 == 0 else col2:
+        st.markdown(f"- **Atividade:** {nome}")
 
-        pdf_bytes = gerar_pdf(professor, data, conteudo)
-        st.download_button(
-            label="📥 Baixar PDF do Registro",
-            data=pdf_bytes,
-            file_name=f"registro_{data.strftime('%Y-%m-%d')}.pdf",
-            mime="application/pdf"
-        )
+col_gerar, col_cancelar = st.columns([1, 1])
 
-        st.success("Registro completo com sucesso!")
-###
+with col_gerar:
+    if st.button("📄 GERAR ATIVIDADE"):
+        if not escola or not professor:
+            st.warning("Preencha todos os campos antes de gerar o PDF.")
+            st.stop()
+
+        with st.spinner("Gerando PDF e enviando log..."):
+            try:
+                url_api = "https://amasedu.onrender.com/gerar-pdf"
+                atividades = [dados.loc[idx, "ATIVIDADE"] for idx in st.session_state.atividades_exibidas]
+                payload = {
+                    "escola": escola,
+                    "professor": professor,
+                    "data": data.strftime("%Y-%m-%d"),
+                    "atividades": atividades
+                }
+                response = requests.post(url_api, json=payload)
+
+                # Envio de log ao Google Forms
+                dados_forms = {
+                    "entry.1932539975": escola,  # Escola
+                    "entry.1534567646": professor,  # Professor
+                    "entry.272957323": st.session_state.get("serie", ""),
+                    "entry.465063798": st.session_state.get("descritor", ""),
+                    "entry.537108716": st.session_state.get("habilidade", ""),
+                    "entry.633190190": str(len(st.session_state.atividades_exibidas)),
+                }
+
+                headers = {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/viewform",
+                    "User-Agent": "Mozilla/5.0"
+                }
+
+                form_url = "https://docs.google.com/forms/d/e/1FAIpQLSdxICVdcS9nEgH_vwetgvJHZRQEYPDJXCOywaTaNVC4F6XLRQ/formResponse"
+                try:
+                    payload_encoded = urlencode(dados_forms)
+                    requests.post(form_url, data=payload_encoded, headers=headers, timeout=5)
+                except Exception as e:
+                    st.warning(f"⚠️ Erro ao enviar log: {e}")
+
+                if response.status_code == 200:
+                    st.download_button(
+                        label="📥 Baixar PDF",
+                        data=response.content,
+                        file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
+                        mime="application/pdf"
+                    )
+                    st.success("PDF gerado com sucesso!")
+                else:
+                    st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
+            except Exception as e:
+                st.error(f"Erro de conexão com o gerador de PDF: {str(e)}")
+
+with col_cancelar:
+    if st.button("❌ CANCELAR E RECOMEÇAR"):
+        st.session_state.clear()
+        st.switch_page("QuestoesAMA.py")
