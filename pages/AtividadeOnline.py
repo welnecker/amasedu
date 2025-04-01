@@ -1,4 +1,4 @@
-# AtividadeOnline.py (Formulário interativo no próprio app)
+# AtividadeOnline.py (Formulário interativo com código da atividade)
 import streamlit as st
 import pandas as pd
 import requests
@@ -9,6 +9,13 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
+
+# --- ENTRADA DO CÓDIGO DA ATIVIDADE GERADA PELO PROFESSOR ---
+codigo_atividade = st.text_input("Digite o código da atividade fornecido pelo professor:")
+
+if not codigo_atividade:
+    st.info("Por favor, digite o código da atividade para visualizar as questões.")
+    st.stop()
 
 # --- CAMPOS DO CABEÇALHO ---
 st.subheader("Identificação do aluno")
@@ -32,19 +39,27 @@ def carregar_atividades():
 
 dados = carregar_atividades()
 
-if dados.empty:
-    st.warning("Nenhuma atividade disponível no momento. Aguarde o professor gerar a atividade.")
+# Filtra pelas atividades do código digitado
+dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
+
+if dados_filtrados.empty:
+    st.warning("Nenhuma atividade encontrada para este código. Verifique com o professor.")
     st.stop()
 
 st.markdown("---")
 st.subheader("Responda às atividades:")
 
 respostas = {}
-for idx, row in dados.iterrows():
+for idx, row in dados_filtrados.iterrows():
     atividade = row["ATIVIDADE"]
     url = f"https://questoesama.pages.dev/{atividade}.jpg"
     st.image(url, caption=f"Atividade {idx+1}", use_container_width=True)
-    resposta = st.radio(f"Escolha a alternativa correta para a atividade {idx+1}:", ["A", "B", "C", "D", "E"], key=f"resposta_{idx}", index=None)
+    resposta = st.radio(
+        f"Escolha a alternativa correta para a atividade {idx+1}:",
+        ["A", "B", "C", "D", "E"],
+        key=f"resposta_{idx}",
+        index=None
+    )
     respostas[atividade] = resposta
 
 # --- ENVIO DAS RESPOSTAS PARA O GOOGLE SHEETS ---
@@ -65,6 +80,7 @@ if st.button("📤 Enviar respostas"):
         for atividade, resposta in respostas.items():
             linhas.append([
                 timestamp,
+                codigo_atividade,
                 nome_aluno,
                 escola,
                 serie,
