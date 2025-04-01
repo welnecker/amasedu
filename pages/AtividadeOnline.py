@@ -10,10 +10,15 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- CARREGAMENTO DA PLANILHA DE DADOS (atividades) ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+# --- CARREGAMENTO DAS IMAGENS SELECIONADAS ---
+if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
+    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
+    st.stop()
 
-@st.cache_data(show_spinner=False)
+# --- CARREGAMENTO DOS DADOS DAS ATIVIDADES ---
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+@st.cache_data
+
 def carregar_dados():
     try:
         response = requests.get(URL_PLANILHA, timeout=10)
@@ -26,15 +31,10 @@ def carregar_dados():
 
 dados = carregar_dados()
 if dados is None:
-    st.error("Erro ao carregar os dados da planilha de atividades.")
+    st.error("Erro ao carregar dados das atividades.")
     st.stop()
 
-# --- VERIFICAR SE HÁ ATIVIDADES SELECIONADAS ---
-if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
-    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
-    st.stop()
-
-# --- CARREGAMENTO DA PLANILHA DE RESPOSTAS ---
+# --- CONFIG PLANILHA DE RESPOSTAS ---
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
 SHEET_NAME = "ATIVIDADES"
 
@@ -49,7 +49,7 @@ def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha)
         body={"values": [linha]}
     ).execute()
 
-# --- FORMULÁRIO DO ALUNO ---
+# --- FORMULÁRIO ---
 st.markdown("Preencha abaixo para responder às atividades online:")
 aluno = st.text_input("Nome do Aluno:")
 data = st.date_input("Data:", value=datetime.today())
@@ -58,21 +58,18 @@ if not aluno:
     st.info("Digite o nome do aluno para prosseguir.")
     st.stop()
 
-# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
+# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA (COM MÚLTIPLA ESCOLHA) ---
 st.markdown("---")
 respostas = []
+opcoes = ["A", "B", "C", "D", "E"]
 
 for idx in st.session_state.atividades_exibidas:
-    try:
-        nome = dados.loc[idx, "ATIVIDADE"]
-        url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-        st.image(url_img, caption=nome, use_container_width=True)
-        resposta = st.text_area(f"Resposta para a atividade {nome}:")
-        respostas.append((nome, resposta))
-    except Exception as e:
-        st.error(f"Erro ao carregar a atividade de índice {idx}: {str(e)}")
+    nome = dados.loc[idx, "ATIVIDADE"]
+    url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+    st.image(url_img, caption=nome, use_container_width=True)
+    resposta = st.radio(f"Escolha a resposta para a atividade {nome}:", opcoes, key=f"resposta_{idx}")
+    respostas.append((nome, resposta))
 
-# --- BOTÃO PARA ENVIAR RESPOSTAS ---
 if st.button("📨 Enviar Respostas"):
     with st.spinner("Enviando para a planilha..."):
         try:
@@ -94,6 +91,6 @@ if st.button("📨 Enviar Respostas"):
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {str(e)}")
 
-if st.button("🔀 Voltar ao início"):
+if st.button("🔁 Voltar ao início"):
     st.session_state.clear()
     st.switch_page("app.py")
