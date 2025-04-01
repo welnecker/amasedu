@@ -1,4 +1,4 @@
-# AtividadeOnline.py (Nova avaliação alternativa com envio para planilha)
+# AtividadeOnline.py (Nova avaliação alternativa com acesso via código gerado)
 import streamlit as st
 import pandas as pd
 import requests
@@ -10,37 +10,66 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- CARREGAMENTO DA PLANILHA ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
-
-@st.cache_data(show_spinner=False)
-def carregar_dados():
-    try:
-        response = requests.get(URL_PLANILHA, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception:
-        return None
-
-if "dados_carregados" not in st.session_state:
-    st.session_state["dados_carregados"] = carregar_dados()
-
-dados = st.session_state["dados_carregados"]
-if dados is None:
-    st.error("Erro ao carregar dados da planilha.")
-    st.stop()
-
-# --- CARREGAMENTO DAS IMAGENS SELECIONADAS ---
-if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
-    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
-    st.stop()
-
-# --- CARREGAMENTO DA PLANILHA PARA RESPOSTAS ---
+# --- PARÂMETROS DA PLANILHA ---
 SPREADSHEET_ID = "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8"
-SHEET_NAME = "ATIVIDADES"
+SHEET_NAME = "ATIVIDADES_GERADAS"
+SHEET_RESPOSTAS = "ATIVIDADES"
 
+# --- FUNÇÃO: LER DADOS POR CÓDIGO ---
+def carregar_dados_por_codigo(secrets, spreadsheet_id, sheet_name, codigo):
+    creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    service = build("sheets", "v4", credentials=creds)
+    result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A2:G",
+    ).execute()
+    valores = result.get("values", [])
+    for linha in valores:
+        if len(linha) >= 7 and linha[0] == codigo:
+            atividades = linha[1].split(",")
+            escola = linha[2]
+            serie = linha[3]
+            return atividades, escola, serie
+    return None, None, None
+
+# --- FORMULÁRIO DE ACESSO VIA CÓDIGO ---
+codigo = st.text_input("Digite o código da atividade recebida do professor:")
+if not codigo:
+    st.info("Insira o código para acessar as atividades.")
+    st.stop()
+
+atividades, escola, serie = carregar_dados_por_codigo(
+    st.secrets["gcp_service_account"], SPREADSHEET_ID, SHEET_NAME, codigo
+)
+
+if not atividades:
+    st.error("Código inválido ou não encontrado.")
+    st.stop()
+
+# --- FORMULÁRIO DO ALUNO ---
+st.markdown(f"### Escola: {escola} | Série: {serie}")
+aluno = st.text_input("Nome do Aluno:")
+data = st.date_input("Data:", value=datetime.today())
+
+if not aluno:
+    st.info("Digite o nome do aluno para prosseguir.")
+    st.stop()
+
+# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
+respostas = []
+st.markdown("---")
+for nome in atividades:
+    url_img = f"https://questoesama.pages.dev/{nome.strip()}.jpg"
+    st.image(url_img, caption=nome.strip(), use_container_width=True)
+    resposta = st.radio(
+        f"Escolha a alternativa correta para a atividade {nome.strip()}:",
+        options=["A", "B", "C", "D", "E"],
+        index=None,
+        key=f"resp_{nome.strip()}"
+    )
+    respostas.append((nome.strip(), resposta))
+
+# --- ENVIO PARA PLANILHA DE RESPOSTAS ---
 def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha):
     creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build("sheets", "v4", credentials=creds)
@@ -51,32 +80,6 @@ def registrar_resposta_google_sheets(secrets, spreadsheet_id, sheet_name, linha)
         insertDataOption="INSERT_ROWS",
         body={"values": [linha]}
     ).execute()
-
-# --- FORMULÁRIO CABEÇALHO ---
-st.markdown("Preencha abaixo para responder às atividades online:")
-escola = st.text_input("Escola:")
-serie = st.text_input("Série:")
-aluno = st.text_input("Nome do Aluno:")
-data = st.date_input("Data:", value=datetime.today())
-
-if not aluno or not escola or not serie:
-    st.info("Preencha todos os campos antes de prosseguir.")
-    st.stop()
-
-# --- EXIBIR ATIVIDADES E CAMPOS DE RESPOSTA ---
-st.markdown("---")
-respostas = []
-for idx in st.session_state.atividades_exibidas:
-    nome = dados.loc[idx, "ATIVIDADE"]
-    url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-    st.image(url_img, caption=nome, use_container_width=True)
-    resposta = st.radio(
-        f"Escolha a alternativa correta para a atividade {nome}:",
-        options=["A", "B", "C", "D", "E"],
-        index=None,
-        key=f"resp_{nome}"
-    )
-    respostas.append((nome, resposta))
 
 if st.button("📨 Enviar Respostas"):
     with st.spinner("Enviando para a planilha..."):
@@ -94,7 +97,7 @@ if st.button("📨 Enviar Respostas"):
                 registrar_resposta_google_sheets(
                     st.secrets["gcp_service_account"],
                     SPREADSHEET_ID,
-                    SHEET_NAME,
+                    SHEET_RESPOSTAS,
                     linha
                 )
             st.success("Todas as respostas foram enviadas com sucesso!")
