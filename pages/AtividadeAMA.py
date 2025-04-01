@@ -40,7 +40,6 @@ st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 
 @st.cache_data
-
 def carregar_dados():
     try:
         response = requests.get(URL_PLANILHA, timeout=10)
@@ -63,9 +62,11 @@ st.subheader("Preencha o cabeçalho da atividade:")
 escola = st.text_input("Escola:")
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
-serie = st.session_state.get("serie", "")
-habilidade = st.session_state.get("habilidade", "")
-descritor = st.session_state.get("descritor", "")
+
+# Captura garantida dos campos escolhidos na tela anterior
+serie = st.session_state.serie if "serie" in st.session_state else ""
+habilidade = st.session_state.habilidade if "habilidade" in st.session_state else ""
+descritor = st.session_state.descritor if "descritor" in st.session_state else ""
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -88,9 +89,9 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         dados_log["Escola"],                            # Coluna B
         dados_log["Professor"],                         # Coluna C
         dados_log["Série"],                             # Coluna D
-        dados_log["Habilidades"],                        # Coluna E
-        dados_log["Descritor"],                          # Coluna F
-        dados_log["TotalQuestoes"]                       # Coluna G
+        dados_log["Habilidades"],                       # Coluna E
+        dados_log["Descritor"],                         # Coluna F
+        dados_log["TotalQuestoes"]                      # Coluna G
     ]]
 
     service.spreadsheets().values().append(
