@@ -1,4 +1,3 @@
-# AtividadeOnline.py (Formulário interativo sem exibir código)
 import streamlit as st
 import pandas as pd
 import requests
@@ -6,11 +5,32 @@ from io import StringIO
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-import random
-import string
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
+
+# --- CAMPOS DO CABEÇALHO ---
+st.subheader("Identificação do aluno")
+nome_aluno = st.text_input("Nome do Aluno:")
+escola = st.text_input("Escola:")
+serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
+
+# --- CARREGAMENTO DAS ATIVIDADES GERADAS PELO PROFESSOR ---
+URL_ATIVIDADES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
+
+@st.cache_data(show_spinner=False)
+def carregar_atividades():
+    try:
+        response = requests.get(URL_ATIVIDADES, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text), sep=",")
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar atividades: {e}")
+        return pd.DataFrame()
+
+dados = carregar_atividades()
 
 # --- INSTRUÇÃO PARA OS ALUNOS ---
 st.info("👨‍🏫 O professor irá informar o código da atividade. Escolha o código correto abaixo para visualizar as questões.")
@@ -18,12 +38,10 @@ st.info("👨‍🏫 O professor irá informar o código da atividade. Escolha o
 # --- SELEÇÃO DE CÓDIGO DA ATIVIDADE ---
 st.subheader("Código da atividade")
 
-# Garante que os dados estão carregados antes de tentar extrair códigos
 if dados.empty or "CODIGO" not in dados.columns:
     st.error("A planilha não contém a coluna 'CODIGO'. Verifique a aba ATIVIDADES_GERADAS.")
     st.stop()
 
-# Lista de códigos únicos ordenada
 codigos_disponiveis = sorted(dados["CODIGO"].dropna().unique())
 
 codigo_atividade = st.selectbox(
@@ -35,57 +53,13 @@ if codigo_atividade == "Escolha...":
     st.warning("Por favor, selecione um código para continuar.")
     st.stop()
 
-# Filtragem das atividades da sessão
 dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
 
 if dados_filtrados.empty:
     st.warning("Nenhuma atividade encontrada para este código. Confirme com o professor se o código está correto.")
     st.stop()
 
-
-# --- CAMPOS DO CABEÇALHO ---
-st.subheader("Identificação do aluno")
-nome_aluno = st.text_input("Nome do Aluno:")
-escola = st.text_input("Escola:")
-serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
-
-# --- CARREGAMENTO DAS ATIVIDADES GERADAS PELO PROFESSOR ---
-URL_ATIVIDADES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
-
-
-@st.cache_data(show_spinner=False)
-def carregar_atividades():
-    try:
-        response = requests.get(URL_ATIVIDADES, timeout=10)
-        response.raise_for_status()
-
-        st.write("✅ CSV carregado com sucesso. Visualizando primeiras linhas:")
-        st.text(response.text[:500])  # Exibe os primeiros 500 caracteres do CSV bruto
-
-        df = pd.read_csv(StringIO(response.text), sep=",")  # ou sep=";" se necessário
-        df.columns = df.columns.str.strip()
-
-        st.write("📌 Colunas detectadas no CSV:", list(df.columns))
-        st.dataframe(df.head())  # Exibe as primeiras linhas como tabela
-
-        return df
-    except Exception as e:
-        st.error(f"❌ Erro ao carregar atividades: {e}")
-        return pd.DataFrame()
-
-
-dados = carregar_atividades()
-
-if "CODIGO" not in dados.columns:
-    st.error("A planilha não contém a coluna 'CODIGO'. Verifique a aba ATIVIDADES_GERADAS.")
-    st.stop()
-
-dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
-
-if dados_filtrados.empty:
-    st.warning("Nenhuma atividade encontrada para esta sessão. Aguarde o professor gerar a atividade.")
-    st.stop()
-
+# --- EXIBIÇÃO DAS QUESTÕES ---
 st.markdown("---")
 st.subheader("Responda às atividades:")
 
@@ -93,9 +67,9 @@ respostas = {}
 for idx, row in dados_filtrados.iterrows():
     atividade = row["ATIVIDADE"]
     url = f"https://questoesama.pages.dev/{atividade}.jpg"
-    st.image(url, caption=f"Atividade {idx+1}", use_container_width=True)
+    st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
     resposta = st.radio(
-        f"Escolha a alternativa correta para a atividade {idx+1}:",
+        f"Escolha a alternativa correta para a atividade {idx + 1}:",
         ["A", "B", "C", "D", "E"],
         key=f"resposta_{idx}",
         index=None
@@ -104,7 +78,7 @@ for idx, row in dados_filtrados.iterrows():
 
 # --- ENVIO DAS RESPOSTAS PARA O GOOGLE SHEETS ---
 if st.button("📤 Enviar respostas"):
-    if not nome_aluno or escola == "" or serie == "Escolha...":
+    if not nome_aluno or escola.strip() == "" or serie == "Escolha...":
         st.warning("Por favor, preencha todos os campos antes de enviar.")
         st.stop()
 
