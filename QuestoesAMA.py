@@ -150,13 +150,16 @@ if descritor != "Escolha...":
     if total >= 10:
      st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
-    # Injetar JavaScript para rolar até o final após pequena espera
+    # Rolar até o botão
     st.markdown("""
-        <script>
-            setTimeout(function(){
-                document.getElementById("fim").scrollIntoView({ behavior: 'smooth' });
-            }, 500);
-        </script>
+    <script>
+        setTimeout(function() {
+            const el = document.getElementById("ancora_botao");
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 300);
+    </script>
     """, unsafe_allow_html=True)
 
 
@@ -169,6 +172,9 @@ if descritor != "Escolha...":
             url_img = f"https://questoesama.pages.dev/{nome}.jpg"
             with col1 if count % 2 == 0 else col2:
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
+
+        st.markdown("<div id='ancora_botao'></div>", unsafe_allow_html=True)
+
 
         if st.button("PREENCHER CABEÇALHO"):
             st.switch_page("pages/AtividadeAMA.py")
