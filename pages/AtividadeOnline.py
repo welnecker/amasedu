@@ -29,11 +29,21 @@ def carregar_atividades():
     try:
         response = requests.get(URL_ATIVIDADES, timeout=10)
         response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
+
+        st.write("✅ CSV carregado com sucesso. Visualizando primeiras linhas:")
+        st.text(response.text[:500])  # Exibe os primeiros 500 caracteres do CSV bruto
+
+        df = pd.read_csv(StringIO(response.text), sep=",")  # ou sep=";" se necessário
         df.columns = df.columns.str.strip()
+
+        st.write("📌 Colunas detectadas no CSV:", list(df.columns))
+        st.dataframe(df.head())  # Exibe as primeiras linhas como tabela
+
         return df
-    except:
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar atividades: {e}")
         return pd.DataFrame()
+
 
 dados = carregar_atividades()
 
