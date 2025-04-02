@@ -40,10 +40,17 @@ def carregar_atividades_api():
 
         df = pd.DataFrame(values[1:], columns=values[0])
         df.columns = df.columns.str.strip().str.upper()
+
+        # Verificação das colunas essenciais
+        if not {"CODIGO", "ATIVIDADE"}.issubset(df.columns):
+            st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
+            return pd.DataFrame()
+
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
         df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
 
         return df[["CODIGO", "ATIVIDADE"]]
+    
     except Exception as e:
         st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
