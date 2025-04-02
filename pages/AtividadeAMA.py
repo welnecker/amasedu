@@ -41,7 +41,8 @@ st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 # ==========================================================
 # 📊 CARREGAMENTO DOS DADOS
 # ==========================================================
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
+
 
 @st.cache_data
 def carregar_dados():
