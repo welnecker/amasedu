@@ -41,19 +41,18 @@ if st.button("📥 Gerar Atividade"):
         st.warning("Por favor, cole o código da atividade.")
         st.stop()
 
-    # Normalizar código
     codigo_atividade = codigo_atividade.strip().upper()
 
-    # Verificações de integridade da planilha
+    # Garantir que a planilha tem as colunas esperadas
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
 
-    # Preparar dados para comparação
+    # Padronizar colunas para evitar problemas com .str.upper()
     dados["CODIGO"] = dados["CODIGO"].astype(str).str.strip().str.upper()
     dados["ATIVIDADE"] = dados["ATIVIDADE"].astype(str).str.strip()
 
-    # Filtrar pelo código digitado
+    # Filtrar as atividades válidas
     dados_filtrados = dados[
         (dados["CODIGO"] == codigo_atividade) &
         (dados["ATIVIDADE"].notna()) &
@@ -64,7 +63,7 @@ if st.button("📥 Gerar Atividade"):
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
 
-    # --- EXIBIÇÃO DAS QUESTÕES ---
+    # Exibir as questões
     st.markdown("---")
     st.subheader("Responda cada questão marcando uma das alternativas:")
 
