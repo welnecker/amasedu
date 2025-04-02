@@ -9,7 +9,7 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
+#st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
 # --- ESTILO VISUAL ---
 st.markdown(
@@ -63,6 +63,9 @@ st.subheader("Preencha o cabeçalho da atividade:")
 escola = st.text_input("Escola:")
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
+serie = st.session_state.get("serie", "")
+habilidade = st.session_state.get("habilidade", "")
+descritor = st.session_state.get("descritor", "")
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -84,7 +87,7 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),  # Coluna A: data/hora
         dados_log["Escola"],                            # Coluna B
         dados_log["Professor"],                         # Coluna C
-        dados_log["Série"],                              # Coluna D
+        dados_log["Série"],                             # Coluna D
         dados_log["Habilidades"],                        # Coluna E
         dados_log["Descritor"],                          # Coluna F
         dados_log["TotalQuestoes"]                       # Coluna G
@@ -121,9 +124,9 @@ with col_gerar:
                 dados_log = {
                     "Escola": escola,
                     "Professor": professor,
-                    "Série": st.session_state.get("serie", ""),
-                    "Descritor": st.session_state.get("descritor", ""),
-                    "Habilidades": st.session_state.get("habilidade", ""),
+                    "Série": serie,
+                    "Habilidades": habilidade,
+                    "Descritor": descritor,
                     "TotalQuestoes": len(st.session_state.atividades_exibidas)
                 }
 
