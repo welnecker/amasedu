@@ -41,15 +41,41 @@ if st.button("📥 Gerar Atividade"):
         st.warning("Por favor, cole o código da atividade.")
         st.stop()
 
-    if dados.empty or "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
-        st.error("A planilha de atividades está incompleta ou mal formatada.")
+    # Normalizar código digitado
+    codigo_atividade = codigo_atividade.strip().upper()
+
+    # Converter coluna CODIGO para string com segurança
+    if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
+        st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
 
-    dados_filtrados = dados[dados["CODIGO"].str.upper() == codigo_atividade.strip().upper()]
+    dados["CODIGO"] = dados["CODIGO"].astype(str).str.upper()
+
+    # Filtrar atividades válidas para esse código
+    dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
+    dados_filtrados = dados_filtrados[dados_filtrados["ATIVIDADE"].notna()]
 
     if dados_filtrados.empty:
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
+
+    # Exibição das atividades começa aqui
+    st.markdown("---")
+    st.subheader("Responda cada questão marcando uma das alternativas:")
+
+    respostas = {}
+    for idx, row in dados_filtrados.iterrows():
+        atividade = row["ATIVIDADE"]
+        url = f"https://questoesama.pages.dev/{atividade}.jpg"
+        st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
+        resposta = st.radio(
+            label="",
+            options=["A", "B", "C", "D", "E"],
+            key=f"resposta_{idx}",
+            index=None
+        )
+        respostas[atividade] = resposta
+
 
     # --- EXIBIÇÃO DAS QUESTÕES ---
     st.markdown("---")
