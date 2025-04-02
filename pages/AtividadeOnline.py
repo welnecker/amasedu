@@ -24,10 +24,10 @@ def carregar_atividades():
     try:
         response = requests.get(URL_PLANILHA, timeout=10)
         response.raise_for_status()
-        linhas = response.text.strip().split("\n")
-        header = linhas[0].split(",")
-        values = [linha.split(",") for linha in linhas[1:]]
-        df = pd.DataFrame(values, columns=header[:len(values[0])])
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip().str.upper()
+        df = df[["CODIGO", "ATIVIDADE"]]  # mantém apenas as colunas relevantes
+
         df.columns = df.columns.str.strip().str.upper()
         return df
     except Exception as e:
