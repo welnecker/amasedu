@@ -41,11 +41,14 @@ st.subheader("Código da atividade")
 codigo_atividade = st.text_input("Cole o código fornecido pelo professor:")
 
 if st.button("📥 Gerar Atividade"):
-    if not codigo_atividade:
+    if not codigo_atividade.strip():
         st.warning("Por favor, cole o código da atividade.")
         st.stop()
+    st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
 
-    codigo_atividade = codigo_atividade.strip().upper()
+# Após clique, continua com a lógica mesmo após o reload
+if "codigo_confirmado" in st.session_state:
+    codigo_atividade = st.session_state.codigo_confirmado
 
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
