@@ -148,12 +148,16 @@ if descritor != "Escolha...":
     st.info(f"{total}/10 atividades escolhidas.")
 
     if total >= 10:
-        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
-        st.markdown("""
+     st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+
+    # Injetar JavaScript para rolar até o final após pequena espera
+    st.markdown("""
         <script>
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            setTimeout(function(){
+                document.getElementById("fim").scrollIntoView({ behavior: 'smooth' });
+            }, 500);
         </script>
-        """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
     if st.session_state.atividades_exibidas:
