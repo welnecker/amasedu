@@ -17,24 +17,40 @@ escola = st.text_input("Escola:")
 serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
 
 # --- URL DA PLANILHA COM ATIVIDADES GERADAS ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 @st.cache_data(show_spinner=False)
-def carregar_atividades():
+def carregar_atividades_api():
     try:
-        response = requests.get(URL_PLANILHA, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip().str.upper()
-        df = df[["CODIGO", "ATIVIDADE"]]  # mantém apenas as colunas relevantes
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
+        )
+        service = build("sheets", "v4", credentials=creds)
 
+        result = service.spreadsheets().values().get(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="ATIVIDADES_GERADAS!A:C"
+        ).execute()
+
+        values = result.get("values", [])
+        if not values or len(values) < 2:
+            return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
+
+        df = pd.DataFrame(values[1:], columns=values[0])
         df.columns = df.columns.str.strip().str.upper()
-        return df
+        df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
+        df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
+
+        return df[["CODIGO", "ATIVIDADE"]]
     except Exception as e:
-        st.error(f"Erro ao carregar atividades: {e}")
+        st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
 
-dados = carregar_atividades()
+# Carrega as atividades via API agora
+dados = carregar_atividades_api()
+
 
 # --- CÓDIGO DO PROFESSOR ---
 st.subheader("Código da atividade")
