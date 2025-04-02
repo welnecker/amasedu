@@ -24,7 +24,8 @@ def carregar_atividades():
         response = requests.get(URL_PLANILHA, timeout=10)
         response.raise_for_status()
         df = pd.read_csv(StringIO(response.text), sep=",")
-        df.columns = df.columns.str.strip()
+        df.columns = df.columns.str.strip().str.upper()
+        df = df[["CODIGO", "ATIVIDADE"]]  # Garante colunas essenciais
         return df
     except Exception as e:
         st.error(f"Erro ao carregar atividades: {e}")
@@ -43,16 +44,13 @@ if st.button("📥 Gerar Atividade"):
 
     codigo_atividade = codigo_atividade.strip().upper()
 
-    # Garantir que a planilha tem as colunas esperadas
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
 
-    # Padronizar colunas para evitar problemas com .str.upper()
     dados["CODIGO"] = dados["CODIGO"].astype(str).str.strip().str.upper()
     dados["ATIVIDADE"] = dados["ATIVIDADE"].astype(str).str.strip()
 
-    # Filtrar as atividades válidas
     dados_filtrados = dados[
         (dados["CODIGO"] == codigo_atividade) &
         (dados["ATIVIDADE"].notna()) &
@@ -63,7 +61,6 @@ if st.button("📥 Gerar Atividade"):
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
 
-    # Exibir as questões
     st.markdown("---")
     st.subheader("Responda cada questão marcando uma das alternativas:")
 
@@ -80,7 +77,6 @@ if st.button("📥 Gerar Atividade"):
         )
         respostas[atividade] = resposta
 
-    # --- ENVIO DAS RESPOSTAS ---
     if st.button("📤 Enviar respostas"):
         if not nome_aluno or escola.strip() == "" or serie == "Escolha...":
             st.warning("Por favor, preencha todos os campos antes de enviar.")
@@ -93,18 +89,11 @@ if st.button("📥 Gerar Atividade"):
             )
             service = build("sheets", "v4", credentials=creds)
 
-            linhas = []
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            for atividade, resposta in respostas.items():
-                linhas.append([
-                    timestamp,
-                    codigo_atividade,
-                    nome_aluno,
-                    escola,
-                    serie,
-                    atividade,
-                    resposta
-                ])
+            linhas = [
+                [timestamp, codigo_atividade, nome_aluno, escola, serie, atividade, resposta]
+                for atividade, resposta in respostas.items()
+            ]
 
             service.spreadsheets().values().append(
                 spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
