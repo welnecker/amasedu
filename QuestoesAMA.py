@@ -127,7 +127,10 @@ if descritor != "Escolha...":
                     checkbox_key = f"chk_{idx}"
                     st.session_state[checkbox_key] = True
                     if idx not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(idx)
+                        nome_atividade = row["ATIVIDADE"]
+                if nome_atividade not in st.session_state.atividades_exibidas:
+                    st.session_state.atividades_exibidas.append(nome_atividade)
+
                 st.rerun()
 
             for idx, row in resultados.iterrows():
@@ -139,9 +142,12 @@ if descritor != "Escolha...":
                 )
                 checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
                 if checked and idx not in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.append(idx)
+                    nome_atividade = row["ATIVIDADE"]
+                if nome_atividade not in st.session_state.atividades_exibidas:
+                        st.session_state.atividades_exibidas.append(nome_atividade)
+
                 elif not checked and idx in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.remove(idx)
+                        st.session_state.atividades_exibidas.remove(idx)
 
     total = len(st.session_state.atividades_exibidas)
     st.progress(total / 10 if total <= 10 else 1.0)

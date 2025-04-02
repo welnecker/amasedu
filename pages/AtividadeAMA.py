@@ -111,10 +111,13 @@ if "atividades_exibidas" not in st.session_state or not st.session_state.ativida
 # ==========================================================
 st.success("Atividades selecionadas:")
 col1, col2 = st.columns(2)
-for i, idx in enumerate(st.session_state.atividades_exibidas):
-    nome = dados.loc[idx, "ATIVIDADE"]
+# Mostra os nomes das atividades diretamente da session_state
+st.success("Atividades selecionadas:")
+col1, col2 = st.columns(2)
+for i, nome in enumerate(st.session_state.atividades_exibidas):
     with col1 if i % 2 == 0 else col2:
         st.markdown(f"- **Atividade:** {nome}")
+
 
 # ==========================================================
 # 🚀 GERAÇÃO DE PDF E SALVAMENTO
