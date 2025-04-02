@@ -145,7 +145,7 @@ if descritor != "Escolha...":
 
     total = len(st.session_state.atividades_exibidas)
     st.progress(total / 10 if total <= 10 else 1.0)
-    st.info(f"{total}/10 atividades escolhidas.")
+    st.info(f"{total}/10 atividades escolhidas. Role a página para baixo.")
 
     if total >= 10:
      st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
