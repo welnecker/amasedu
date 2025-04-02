@@ -167,7 +167,7 @@ if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabe
         turma = st.text_input("Turma:")
     
         if st.button("Gerar PDF"):
-        if nome_escola and nome_professor and nome_aluno and turma:
+         if nome_escola and nome_professor and nome_aluno and turma:
             st.success("PDF gerado com sucesso!")
             # Aqui você pode adicionar a lógica para gerar o PDF
             # Por exemplo, usar uma biblioteca como reportlab ou fpdf
