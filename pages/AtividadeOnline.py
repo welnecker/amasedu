@@ -12,8 +12,36 @@ import string
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- O CÓDIGO DA ATIVIDADE É PASSADO COMO PARÂMETRO SECRETO NO LINK (EX: ?codigo=x4a2zq) ---
-codigo_atividade = st.query_params.get("codigo", "")
+# --- INSTRUÇÃO PARA OS ALUNOS ---
+st.info("👨‍🏫 O professor irá informar o código da atividade. Escolha o código correto abaixo para visualizar as questões.")
+
+# --- SELEÇÃO DE CÓDIGO DA ATIVIDADE ---
+st.subheader("Código da atividade")
+
+# Garante que os dados estão carregados antes de tentar extrair códigos
+if dados.empty or "CODIGO" not in dados.columns:
+    st.error("A planilha não contém a coluna 'CODIGO'. Verifique a aba ATIVIDADES_GERADAS.")
+    st.stop()
+
+# Lista de códigos únicos ordenada
+codigos_disponiveis = sorted(dados["CODIGO"].dropna().unique())
+
+codigo_atividade = st.selectbox(
+    "Selecione o código da atividade recebida do professor:",
+    ["Escolha..."] + codigos_disponiveis
+)
+
+if codigo_atividade == "Escolha...":
+    st.warning("Por favor, selecione um código para continuar.")
+    st.stop()
+
+# Filtragem das atividades da sessão
+dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
+
+if dados_filtrados.empty:
+    st.warning("Nenhuma atividade encontrada para este código. Confirme com o professor se o código está correto.")
+    st.stop()
+
 
 # --- CAMPOS DO CABEÇALHO ---
 st.subheader("Identificação do aluno")
