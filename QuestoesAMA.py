@@ -149,6 +149,12 @@ if descritor != "Escolha...":
 
     if total >= 10:
         st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+        st.markdown("""
+        <script>
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        </script>
+        """, unsafe_allow_html=True)
+
 
     if st.session_state.atividades_exibidas:
         st.markdown("<hr />", unsafe_allow_html=True)
