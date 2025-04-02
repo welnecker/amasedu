@@ -15,13 +15,13 @@ nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
 serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
 
-# --- DADOS DAS ATIVIDADES ---
+# --- URL DA PLANILHA COM ATIVIDADES GERADAS ---
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
 
 @st.cache_data(show_spinner=False)
 def carregar_atividades():
     try:
-        response = requests.get(URL_ATIVIDADES, timeout=10)
+        response = requests.get(URL_PLANILHA, timeout=10)
         response.raise_for_status()
         df = pd.read_csv(StringIO(response.text), sep=",")
         df.columns = df.columns.str.strip()
@@ -41,41 +41,28 @@ if st.button("📥 Gerar Atividade"):
         st.warning("Por favor, cole o código da atividade.")
         st.stop()
 
-    # Normalizar código digitado
+    # Normalizar código
     codigo_atividade = codigo_atividade.strip().upper()
 
-    # Converter coluna CODIGO para string com segurança
+    # Verificações de integridade da planilha
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
 
-    dados["CODIGO"] = dados["CODIGO"].astype(str).str.upper()
+    # Preparar dados para comparação
+    dados["CODIGO"] = dados["CODIGO"].astype(str).str.strip().str.upper()
+    dados["ATIVIDADE"] = dados["ATIVIDADE"].astype(str).str.strip()
 
-    # Filtrar atividades válidas para esse código
-    dados_filtrados = dados[dados["CODIGO"] == codigo_atividade]
-    dados_filtrados = dados_filtrados[dados_filtrados["ATIVIDADE"].notna()]
+    # Filtrar pelo código digitado
+    dados_filtrados = dados[
+        (dados["CODIGO"] == codigo_atividade) &
+        (dados["ATIVIDADE"].notna()) &
+        (dados["ATIVIDADE"] != "")
+    ]
 
     if dados_filtrados.empty:
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
-
-    # Exibição das atividades começa aqui
-    st.markdown("---")
-    st.subheader("Responda cada questão marcando uma das alternativas:")
-
-    respostas = {}
-    for idx, row in dados_filtrados.iterrows():
-        atividade = row["ATIVIDADE"]
-        url = f"https://questoesama.pages.dev/{atividade}.jpg"
-        st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
-        resposta = st.radio(
-            label="",
-            options=["A", "B", "C", "D", "E"],
-            key=f"resposta_{idx}",
-            index=None
-        )
-        respostas[atividade] = resposta
-
 
     # --- EXIBIÇÃO DAS QUESTÕES ---
     st.markdown("---")
@@ -87,7 +74,7 @@ if st.button("📥 Gerar Atividade"):
         url = f"https://questoesama.pages.dev/{atividade}.jpg"
         st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
         resposta = st.radio(
-            label="",  # Remove o texto "Escolha a alternativa..."
+            label="",
             options=["A", "B", "C", "D", "E"],
             key=f"resposta_{idx}",
             index=None
