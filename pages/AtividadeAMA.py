@@ -1,3 +1,4 @@
+
 # ==========================================================
 # 📦 IMPORTAÇÕES
 # ==========================================================
@@ -39,10 +40,9 @@ st.markdown("""
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 # ==========================================================
-# 📊 CARREGAMENTO DOS DADOS
+# 📊 CARREGAMENTO DOS DADOS (opcional)
 # ==========================================================
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
-
 
 @st.cache_data
 def carregar_dados():
@@ -111,13 +111,9 @@ if "atividades_exibidas" not in st.session_state or not st.session_state.ativida
 # ==========================================================
 st.success("Atividades selecionadas:")
 col1, col2 = st.columns(2)
-# Mostra os nomes das atividades diretamente da session_state
-st.success("Atividades selecionadas:")
-col1, col2 = st.columns(2)
 for i, nome in enumerate(st.session_state.atividades_exibidas):
     with col1 if i % 2 == 0 else col2:
         st.markdown(f"- **Atividade:** {nome}")
-
 
 # ==========================================================
 # 🚀 GERAÇÃO DE PDF E SALVAMENTO
@@ -132,7 +128,7 @@ with col_gerar:
 
         with st.spinner("Gerando PDF, salvando código e registrando log..."):
             try:
-                atividades = [dados.loc[idx, "ATIVIDADE"] for idx in st.session_state.atividades_exibidas]
+                atividades = st.session_state.atividades_exibidas
                 codigo_atividade = gerar_codigo_aleatorio()
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
