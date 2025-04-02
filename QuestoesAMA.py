@@ -21,7 +21,6 @@ if not st.session_state.autenticado:
         st.error("Senha incorreta. Tente novamente.")
     st.stop()
 
-# Versão
 st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
 # --- ESTILO VISUAL ---
@@ -121,42 +120,38 @@ if descritor != "Escolha...":
                 continue
 
             if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
-                for idx in resultados.index:
+                for idx, row in resultados.iterrows():
+                    nome_atividade = row["ATIVIDADE"]
                     if len(st.session_state.atividades_exibidas) >= 10:
                         break
                     checkbox_key = f"chk_{idx}"
                     st.session_state[checkbox_key] = True
-                    if idx not in st.session_state.atividades_exibidas:
-                        nome_atividade = row["ATIVIDADE"]
-                if nome_atividade not in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.append(nome_atividade)
-
+                    if nome_atividade not in st.session_state.atividades_exibidas:
+                        st.session_state.atividades_exibidas.append(nome_atividade)
                 st.rerun()
 
             for idx, row in resultados.iterrows():
                 checkbox_key = f"chk_{idx}"
+                nome_atividade = row["ATIVIDADE"]
                 if checkbox_key not in st.session_state:
                     st.session_state[checkbox_key] = False
                 disabled = (
                     not st.session_state[checkbox_key] and len(st.session_state.atividades_exibidas) >= 10
                 )
-                checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
-                if checked and idx not in st.session_state.atividades_exibidas:
-                    nome_atividade = row["ATIVIDADE"]
-                if nome_atividade not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(nome_atividade)
+                checked = st.checkbox(nome_atividade, key=checkbox_key, disabled=disabled)
 
-                elif not checked and idx in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.remove(idx)
+                if checked and nome_atividade not in st.session_state.atividades_exibidas:
+                    st.session_state.atividades_exibidas.append(nome_atividade)
+                elif not checked and nome_atividade in st.session_state.atividades_exibidas:
+                    st.session_state.atividades_exibidas.remove(nome_atividade)
 
     total = len(st.session_state.atividades_exibidas)
     st.progress(total / 10 if total <= 10 else 1.0)
     st.info(f"{total}/10 atividades escolhidas. Role a página para baixo.")
 
     if total >= 10:
-     st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
-    # Rolar até o botão
     st.markdown("""
     <script>
         setTimeout(function() {
@@ -168,19 +163,16 @@ if descritor != "Escolha...":
     </script>
     """, unsafe_allow_html=True)
 
-
     if st.session_state.atividades_exibidas:
         st.markdown("<hr />", unsafe_allow_html=True)
         st.success("Links das atividades selecionadas:")
         col1, col2 = st.columns(2)
-        for count, idx in enumerate(st.session_state.atividades_exibidas):
-            nome = dados.loc[idx, "ATIVIDADE"]
+        for count, nome in enumerate(st.session_state.atividades_exibidas):
             url_img = f"https://questoesama.pages.dev/{nome}.jpg"
             with col1 if count % 2 == 0 else col2:
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
         st.markdown("<div id='ancora_botao'></div>", unsafe_allow_html=True)
-
 
         if st.button("PREENCHER CABEÇALHO"):
             st.switch_page("pages/AtividadeAMA.py")
