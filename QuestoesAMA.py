@@ -6,6 +6,9 @@ from io import StringIO
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
+container = st.empty()
+final_container = st.empty()
+
 # --- BLOQUEIO POR SENHA ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
@@ -16,7 +19,7 @@ if not st.session_state.autenticado:
     if senha == "sedu":
         st.session_state.autenticado = True
         st.success("Acesso autorizado!")
-        st.rerun()
+        st.experimental_rerun()
     elif senha:
         st.error("Senha incorreta. Tente novamente.")
     st.stop()
@@ -80,106 +83,101 @@ dados = carregar_dados()
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
-        st.rerun()
+        st.experimental_rerun()
     st.stop()
 
 if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
+    st.session_state.total = 0
 
-# --- FILTROS ---
-st.markdown("### Escolha Série, Habilidade e Descritor.")
-col_serie, col_habilidade, col_descritor = st.columns(3)
+if st.button("Recomeçar tudo", key="recomecar"):
+    st.session_state.atividades_exibidas = []
+    st.session_state.total = 0
+    st.experimental_rerun()
 
-serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
-habilidade = col_habilidade.selectbox("**HABILIDADE**",
-    ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
-    key="habilidade"
-)
-descritor = col_descritor.selectbox("**DESCRITOR**",
-    ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
-    key="descritor"
-)
+st.markdown("### Selecione os filtros:")
 
-# --- EXIBIÇÃO DE QUESTÕES ---
-if descritor != "Escolha...":
-    st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
+col1, col2, col3 = st.columns(3)
 
-    total_selecionado = len(st.session_state.atividades_exibidas)
-    col_facil, col_medio, col_dificil = st.columns(3)
-    niveis_fixos = {'Facil': ('Fácil', col_facil), 'Medio': ('Médio', col_medio), 'Dificil': ('Difícil', col_dificil)}
+with col1:
+    serie = st.selectbox("Série:", ["Escolha..."] + sorted(dados["SERIE"].unique()))
 
-    for nivel_nome, (nivel_titulo, coluna) in niveis_fixos.items():
-        with coluna:
-            st.markdown(f"#### {nivel_titulo}")
-            resultados = dados.query(
-                'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
-            )[["ATIVIDADE"]].head(10)
+with col2:
+    habilidade = st.selectbox("Habilidade:", ["Escolha..."] + sorted(dados["HABILIDADE"].unique()))
 
-            if resultados.empty:
-                st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
-                continue
+with col3:
+    descritor = st.selectbox("Descritor:", ["Escolha..."] + sorted(dados["DESCRITOR"].unique()))
 
-            if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
-                for idx in resultados.index:
-                    if len(st.session_state.atividades_exibidas) >= 10:
-                        break
-                    checkbox_key = f"chk_{idx}"
-                    st.session_state[checkbox_key] = True
-                    if idx not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(idx)
-                st.rerun()
+nivel = st.radio("Nível:", ["FÁCIL", "MÉDIO", "DIFÍCIL"], horizontal=True)
 
-            for idx, row in resultados.iterrows():
-                checkbox_key = f"chk_{idx}"
-                if checkbox_key not in st.session_state:
-                    st.session_state[checkbox_key] = False
-                disabled = (
-                    not st.session_state[checkbox_key] and len(st.session_state.atividades_exibidas) >= 10
-                )
-                checked = st.checkbox(row['ATIVIDADE'], key=checkbox_key, disabled=disabled)
-                if checked and idx not in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.append(idx)
-                elif not checked and idx in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.remove(idx)
-
-    total = len(st.session_state.atividades_exibidas)
-    st.progress(total / 10 if total <= 10 else 1.0)
-    st.info(f"{total}/10 atividades escolhidas.")
-
-    if total >= 10:
-     st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
-
-    # Rolar até o botão
-    st.markdown("""
-    <script>
-        setTimeout(function() {
-            const el = document.getElementById("ancora_botao");
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }, 300);
-    </script>
+st.markdown("""
+    <a href="#final" style="text-decoration:none;">
+        <button style="background-color:#4CAF50;color:white;padding:10px;border:none;border-radius:5px;cursor:pointer;">
+            Ir para o final
+        </button>
+    </a>
     """, unsafe_allow_html=True)
 
+if st.session_state.atividades_exibidas:
+    st.markdown("### Atividades selecionadas:")
+    for idx, atividade in enumerate(st.session_state.atividades_exibidas, 1):
+        st.markdown(f"**{idx}. {atividade}**")
+    
+    st.markdown(f"**Total de atividades: {st.session_state.total}**")
 
-    if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, idx in enumerate(st.session_state.atividades_exibidas):
-            nome = dados.loc[idx, "ATIVIDADE"]
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
+if descritor != "Escolha...":
+    filtro = dados[(dados["SERIE"] == serie) & 
+                   (dados["HABILIDADE"] == habilidade) & 
+                   (dados["DESCRITOR"] == descritor) & 
+                   (dados["NIVEL"] == nivel)]
+    
+    if not filtro.empty:
+        atividade = filtro["ATIVIDADE"].iloc[0]
+        if st.button("Adicionar Atividade"):
+            if atividade not in st.session_state.atividades_exibidas:
+                st.session_state.atividades_exibidas.append(atividade)
+                st.session_state.total += 1
+                st.experimental_rerun()
+            else:
+                st.warning("Esta atividade já foi adicionada.")
+    else:
+        st.warning("Nenhuma atividade encontrada com os filtros selecionados.")
 
-        st.markdown("<div id='ancora_botao'></div>", unsafe_allow_html=True)
+total = st.session_state.total
 
+if total >= 10:
+    container.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+    final_container.markdown("## Fim da seleção")
 
-        if st.button("PREENCHER CABEÇALHO"):
-            st.switch_page("pages/AtividadeAMA.py")
+if st.button("PREENCHER CABEÇALHO"):
+    st.session_state.preencher_cabecalho = True
+    st.experimental_rerun()
 
-if st.button("Recomeçar tudo"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.rerun()
+if "preencher_cabecalho" in st.session_state and st.session_state.preencher_cabecalho:
+    st.markdown("### Preencha o cabeçalho:")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        nome_escola = st.text_input("Nome da escola:")
+        nome_professor = st.text_input("Nome do professor:")
+    
+    with col2:
+        nome_aluno = st.text_input("Nome do aluno:")
+        turma = st.text_input("Turma:")
+    
+        if st.button("Gerar PDF"):
+        if nome_escola and nome_professor and nome_aluno and turma:
+            st.success("PDF gerado com sucesso!")
+            # Aqui você pode adicionar a lógica para gerar o PDF
+            # Por exemplo, usar uma biblioteca como reportlab ou fpdf
+            # e criar um link para download do PDF gerado
+        else:
+            st.error("Por favor, preencha todos os campos do cabeçalho.")
+
+st.markdown("<div id='final'></div>", unsafe_allow_html=True)
+
+# Adicione informações de rodapé ou créditos aqui, se necessário
+st.markdown("---")
+st.markdown("Desenvolvido pela Equipe de Tecnologia Educacional - SEDU/ES")
+
