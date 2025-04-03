@@ -1,6 +1,3 @@
-# ⚙️ Configuração da página
-
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -9,7 +6,6 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
-
 
 # 📌 Dados do aluno
 st.subheader("Preencha seus dados abaixo:")
@@ -20,7 +16,7 @@ turma = st.text_input("Turma:")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
-# 🔐 Função para gerar ID único baseado nos dados preenchidos
+# 🔐 Função para gerar ID único
 def gerar_id_unico(nome, escola, turma, codigo):
     def normalizar(txt):
         txt = txt.lower().strip()
@@ -28,7 +24,7 @@ def gerar_id_unico(nome, escola, turma, codigo):
         return ''.join(c for c in txt if c.isalnum())
     return f"{normalizar(nome)}_{normalizar(escola)}_{normalizar(turma)}_{normalizar(codigo)}"
 
-# 📤 Carregar atividades via API do Google Sheets
+# 📤 Carregar atividades via Google Sheets API
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -41,9 +37,11 @@ def carregar_atividades_api():
             spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
             range="ATIVIDADES_GERADAS!A:C"
         ).execute()
+
         values = result.get("values", [])
         if not values or len(values) < 2:
             return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
+
         header = [col.strip().upper() for col in values[0]]
         rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
         df = pd.DataFrame(rows, columns=header)
@@ -56,11 +54,11 @@ def carregar_atividades_api():
 
 dados = carregar_atividades_api()
 
-# ✅ Inicializa lista de IDs já usados
+# ✅ Lista de IDs usados
 if "ids_realizados" not in st.session_state:
     st.session_state.ids_realizados = set()
 
-# 👉 Gera atividade
+# 📥 Botão de gerar atividade
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
@@ -75,7 +73,7 @@ if st.button("📥 Gerar Atividade"):
     st.session_state.id_unico_atual = id_unico
     st.rerun()
 
-# 🎯 Exibe atividade
+# 🧠 Se já existe código confirmado, exibe as atividades
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
     id_unico = st.session_state.id_unico_atual
@@ -85,8 +83,8 @@ if "codigo_confirmado" in st.session_state:
         st.stop()
 
     dados_filtrados = dados[
-        (dados["CODIGO"] == codigo_atividade) & 
-        (dados["ATIVIDADE"].notna()) & 
+        (dados["CODIGO"] == codigo_atividade) &
+        (dados["ATIVIDADE"].notna()) &
         (dados["ATIVIDADE"] != "")
     ]
 
@@ -110,6 +108,7 @@ if "codigo_confirmado" in st.session_state:
         )
         respostas[atividade] = resposta
 
+    # 📤 Botão de envio
     if st.button("📤 Enviar respostas"):
         if not nome_aluno or not escola or not turma:
             st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
@@ -140,11 +139,17 @@ if "codigo_confirmado" in st.session_state:
                 body={"values": linhas}
             ).execute()
 
-            # Marca como respondido e limpa sessão
-            st.session_state.ids_realizados.add(id_unico)
+            # ✅ Sucesso: bloquear reenvio e reiniciar app
             st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
+
+            st.session_state.ids_realizados.add(id_unico)
+            preservar = st.session_state.ids_realizados.copy()
             st.cache_data.clear()
-            st.session_state.clear()
-            st.stop()
+            for chave in list(st.session_state.keys()):
+                del st.session_state[chave]
+            st.session_state.ids_realizados = preservar
+
+            st.rerun()
+
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
