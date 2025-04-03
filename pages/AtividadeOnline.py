@@ -124,6 +124,9 @@ if "codigo_confirmado" in st.session_state:
                 body={"values": linhas}
             ).execute()
 
+            # ⚠️ IMPORTANTE: limpar cache após salvar nova atividade
+            st.cache_data.clear()
+
             st.success("Respostas enviadas com sucesso! Obrigado por participar.")
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
