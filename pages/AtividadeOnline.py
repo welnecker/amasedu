@@ -105,66 +105,75 @@ if "codigo_confirmado" in st.session_state:
 
     # 📤 Enviar respostas
     # 📤 Botão de envio
-# ✅ Apenas exibe o botão se as questões e respostas já foram carregadas
-if "respostas" in locals() or "respostas" in globals():
-    if st.button("📤 Enviar respostas"):
-        if not nome_aluno or not escola or not turma:
-            st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
-            st.stop()
+# 📤 Botão de envio
+if st.button("📤 Enviar respostas"):
+    if not nome_aluno or not escola or not turma:
+        st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
+        st.stop()
 
-        if any(resposta is None for resposta in respostas.values()):
-            st.warning("⚠️ Existe alguma questão não respondida!")
-            st.stop()
+    if any(resposta is None for resposta in respostas.values()):
+        st.warning("⚠️ Existe alguma questão não respondida!")
+        st.stop()
 
-        try:
-            creds = Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=["https://www.googleapis.com/auth/spreadsheets"]
-            )
-            service = build("sheets", "v4", credentials=creds)
+    try:
+        # Carrega gabarito
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
+        )
+        service = build("sheets", "v4", credentials=creds)
+        gabarito_raw = service.spreadsheets().values().get(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="MATEMATICA!A:B"
+        ).execute()
+        valores = gabarito_raw.get("values", [])[1:]
+        df_gabarito = pd.DataFrame(valores, columns=["ATIVIDADE", "GABARITO"])
+        df_gabarito["ATIVIDADE"] = df_gabarito["ATIVIDADE"].astype(str).str.strip()
 
-            # Gabarito
-            result_gab = service.spreadsheets().values().get(
-                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                range="MATEMATICA!A:B"
-            ).execute()
-            values = result_gab.get("values", [])[1:]
-            gabarito_dict = {linha[0]: linha[1].strip().upper() for linha in values if len(linha) >= 2}
+        # Calcula acertos
+        acertos = 0
+        for atividade, resposta in respostas.items():
+            gabarito_correto = df_gabarito.loc[df_gabarito["ATIVIDADE"] == atividade, "GABARITO"]
+            if not gabarito_correto.empty and resposta == gabarito_correto.values[0].strip().upper():
+                acertos += 1
 
-            # Acertos
-            total = len(respostas)
-            acertos = sum(
-                1 for atividade, resposta in respostas.items()
-                if gabarito_dict.get(atividade) == resposta
-            )
+        total = len(respostas)
 
-            # Registro em linha única
-            timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
-            for atividade, resposta in respostas.items():
-                linha_unica.extend([atividade, resposta])
+        # Registra as respostas
+        creds_envio = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+        service_envio = build("sheets", "v4", credentials=creds_envio)
 
-            service.spreadsheets().values().append(
-                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                range="ATIVIDADES!A1",
-                valueInputOption="USER_ENTERED",
-                insertDataOption="INSERT_ROWS",
-                body={"values": [linha_unica]}
-            ).execute()
+        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
+        for atividade, resposta in respostas.items():
+            linha_unica.extend([atividade, resposta])
 
-            st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
-            st.info(f"📊 Você acertou {acertos} de {total} questões.")
+        service_envio.spreadsheets().values().append(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="ATIVIDADES!A1",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body={"values": [linha_unica]}
+        ).execute()
 
-            st.session_state.ids_realizados.add(id_unico)
-            preservar = st.session_state.ids_realizados.copy()
-            st.cache_data.clear()
-            for chave in list(st.session_state.keys()):
-                del st.session_state[chave]
-            st.session_state.ids_realizados = preservar
-            st.rerun()
+        # ✅ Exibe acertos ANTES do reset
+        st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
+        st.info(f"📊 Você acertou {acertos} de {total} questões.")
 
-        except Exception as e:
-            st.error(f"Erro ao enviar respostas: {e}")
+        # Limpa sessão mas mantém bloqueio de ID
+        st.session_state.ids_realizados.add(st.session_state.id_unico_atual)
+        ids_preservados = st.session_state.ids_realizados.copy()
+        st.cache_data.clear()
+
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.session_state.ids_realizados = ids_preservados
+
+    except Exception as e:
+        st.error(f"Erro ao enviar respostas: {e}")
 
 
 
