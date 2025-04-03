@@ -56,8 +56,16 @@ def carregar_atividades_api():
 dados = carregar_atividades_api()
 
 # --- CÓDIGO DO PROFESSOR ---
-st.subheader("Código da atividade")
-codigo_atividade = st.text_input("Cole o código fornecido pelo professor:")
+st.subheader("Código fornecido pelo professor")
+codigo_atividade = st.text_input("Digite o código da atividade (ex: ABC123):")
+
+# Verifica se aluno preencheu tudo antes de permitir gerar
+if st.button("📥 Gerar Atividade"):
+    if not all([nome_aluno.strip(), escola.strip(), serie != "Escolha...", codigo_atividade.strip()]):
+        st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
+        st.stop()
+    st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
+
 
 if st.button("📥 Gerar Atividade"):
     if not codigo_atividade.strip():
@@ -123,9 +131,6 @@ if "codigo_confirmado" in st.session_state:
                 insertDataOption="INSERT_ROWS",
                 body={"values": linhas}
             ).execute()
-
-            # ⚠️ IMPORTANTE: limpar cache após salvar nova atividade
-            st.cache_data.clear()
 
             st.success("Respostas enviadas com sucesso! Obrigado por participar.")
         except Exception as e:
