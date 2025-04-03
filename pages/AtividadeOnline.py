@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
-import unicodedata
 from datetime import datetime
+import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-# ⚙️ Configuração inicial da página (deve ser a primeira chamada)
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
-
 st.title("💡 Atividade Online - AMA 2025")
 
-# --- Dados do aluno ---
+# --- DADOS DO ALUNO ---
 st.subheader("Preencha seus dados abaixo:")
 nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
@@ -19,7 +17,7 @@ turma = st.text_input("Turma:")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
-# --- Geração de identificador único ---
+# Função para gerar ID único normalizado
 def gerar_id_unico(nome, escola, turma, codigo):
     def normalizar(txt):
         txt = txt.lower().strip()
@@ -29,11 +27,11 @@ def gerar_id_unico(nome, escola, turma, codigo):
 
 id_unico = gerar_id_unico(nome_aluno, escola, turma, codigo_atividade)
 
-# --- Armazenar IDs bloqueados ---
-if "ids_enviados" not in st.session_state:
-    st.session_state.ids_enviados = set()
+# --- Proteção local contra múltiplos envios ---
+if "ids_realizados" not in st.session_state:
+    st.session_state.ids_realizados = set()
 
-# --- Carregamento de dados da API do Google Sheets ---
+# --- Carregar atividades via API ---
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -58,43 +56,39 @@ def carregar_atividades_api():
 
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
         df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
-        return df[["CODIGO", "ATIVIDADE"]]
+        df["TIMESTAMP"] = pd.to_datetime(df["TIMESTAMP"], errors="coerce")
+
+        return df[["CODIGO", "ATIVIDADE", "TIMESTAMP"]]
     except Exception as e:
         st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
 
 dados = carregar_atividades_api()
 
-# --- Geração da atividade ---
+# --- Geração das atividades ---
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
         st.stop()
 
-    if id_unico in st.session_state.ids_enviados:
+    if id_unico in st.session_state.ids_realizados:
         st.warning("❌ Você já fez essa atividade.")
         st.stop()
 
+    st.session_state.ids_realizados.add(id_unico)
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
-    st.session_state.id_unico_atual = id_unico
 
-# --- Exibir questões após confirmação ---
+# --- Exibição das questões ---
 if "codigo_confirmado" in st.session_state:
-    codigo_atividade = st.session_state.get("codigo_confirmado")
-id_unico = st.session_state.get("id_unico_atual")
-
-if not all([codigo_atividade, id_unico]):
-    st.warning("❌ Algo deu errado ao recuperar os dados da atividade.")
-    st.stop()
-
+    codigo_atividade = st.session_state.codigo_confirmado
 
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
 
     dados_filtrados = dados[
-        (dados["CODIGO"] == codigo_atividade) & 
-        (dados["ATIVIDADE"].notna()) & 
+        (dados["CODIGO"] == codigo_atividade) &
+        (dados["ATIVIDADE"].notna()) &
         (dados["ATIVIDADE"] != "")
     ]
 
@@ -119,12 +113,8 @@ if not all([codigo_atividade, id_unico]):
         respostas[atividade] = resposta
 
     if st.button("📤 Enviar respostas"):
-        if not all([nome_aluno.strip(), escola.strip(), turma.strip()]):
+        if not nome_aluno or not escola or not turma:
             st.warning("Por favor, preencha todos os campos antes de enviar.")
-            st.stop()
-
-        if any(r is None for r in respostas.values()):
-            st.warning("⚠️ Existe alguma questão não respondida!")
             st.stop()
 
         try:
@@ -148,15 +138,6 @@ if not all([codigo_atividade, id_unico]):
                 body={"values": linhas}
             ).execute()
 
-            st.session_state.ids_enviados.add(id_unico)
-            st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
-
-            # Limpa a seção para evitar novo envio
-            for key in list(st.session_state.keys()):
-                if key not in ["ids_enviados"]:
-                    del st.session_state[key]
-
-            st.stop()
-
+            st.success("Respostas enviadas com sucesso! Obrigado por participar.")
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
