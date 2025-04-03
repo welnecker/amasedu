@@ -90,6 +90,9 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         body={"values": linha}
     ).execute()
 
+    # Limpa o cache depois do append
+    st.cache_data.clear()
+
 # ==========================================================
 # 🧾 FORMULÁRIO DE CABEÇALHO
 # ==========================================================
@@ -147,6 +150,9 @@ with col_gerar:
                     insertDataOption="INSERT_ROWS",
                     body={"values": linhas}
                 ).execute()
+
+                # Limpa o cache depois do append
+                st.cache_data.clear()
 
                 # Salvar log do cabeçalho
                 dados_log = {
