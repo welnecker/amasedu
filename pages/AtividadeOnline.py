@@ -1,5 +1,5 @@
 # ⚙️ Configuração da página
-st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
+
 
 import streamlit as st
 import pandas as pd
@@ -8,7 +8,8 @@ import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-st.title("💡 Atividade Online - AMA 2025")
+st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
+
 
 # 📌 Dados do aluno
 st.subheader("Preencha seus dados abaixo:")
