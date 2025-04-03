@@ -7,54 +7,61 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 st.title("💡 Atividade Online - AMA 2025")
 
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-import unicodedata
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-
-st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
-st.title("💡 Atividade Online - AMA 2025")
-
-# --- DADOS DO ALUNO ---
-st.subheader("Preencha seus dados abaixo:")
+# --- IDENTIFICAÇÃO DO ALUNO ---
+st.subheader("Identificação do aluno")
 nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
 turma = st.text_input("Turma:")
 
-st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
-codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
+# --- CARREGAR ATIVIDADES COM API ---
+@st.cache_data(show_spinner=False)
+def carregar_atividades_api():
+    try:
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
+        )
+        service = build("sheets", "v4", credentials=creds)
 
-# Função para gerar um ID único com normalização
-def gerar_id_unico(nome, escola, turma, codigo):
-    def normalizar(txt):
-        txt = txt.lower().strip()
-        txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
-        return ''.join(c for c in txt if c.isalnum())
-    return f"{normalizar(nome)}_{normalizar(escola)}_{normalizar(turma)}_{normalizar(codigo)}"
+        result = service.spreadsheets().values().get(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="ATIVIDADES_GERADAS!A:C"
+        ).execute()
 
-id_unico = gerar_id_unico(nome_aluno, escola, turma, codigo_atividade)
+        values = result.get("values", [])
+        if not values or len(values) < 2:
+            return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
 
-# Proteção: bloqueia tentativa duplicada na mesma instância
-if "ids_realizados" not in st.session_state:
-    st.session_state.ids_realizados = set()
+        header = [col.strip().upper() for col in values[0]]
+        rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
+        df = pd.DataFrame(rows, columns=header)
 
+        if not {"CODIGO", "ATIVIDADE", "TIMESTAMP"}.issubset(df.columns):
+            st.error("A planilha precisa conter as colunas: CODIGO, ATIVIDADE, TIMESTAMP.")
+            return pd.DataFrame()
+
+        df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
+        df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
+        df["TIMESTAMP"] = pd.to_datetime(df["TIMESTAMP"], errors="coerce")
+
+        return df[["CODIGO", "ATIVIDADE", "TIMESTAMP"]]
+    except Exception as e:
+        st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
+        return pd.DataFrame()
+
+dados = carregar_atividades_api()
+
+# --- CÓDIGO DO PROFESSOR ---
+st.subheader("Código fornecido pelo professor")
+codigo_atividade = st.text_input("Digite o código da atividade (ex: ABC123):")
+
+# Validação dos dados do aluno antes de mostrar atividades
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
         st.stop()
 
-    if id_unico in st.session_state.ids_realizados:
-        st.warning("❌ Você já fez essa atividade.")
-        st.stop()
-    else:
-        st.session_state.ids_realizados.add(id_unico)
-        st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
-
-# No momento da exibição:
-st.subheader("Responda cada questão com atenção, marcando uma das alternativas (você só tem uma tentativa):")
-
+    st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
 
 # Após confirmação
 if "codigo_confirmado" in st.session_state:
