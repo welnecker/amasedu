@@ -66,13 +66,6 @@ if st.button("📥 Gerar Atividade"):
         st.stop()
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
 
-
-if st.button("📥 Gerar Atividade"):
-    if not codigo_atividade.strip():
-        st.warning("Por favor, cole o código da atividade.")
-        st.stop()
-    st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
-
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
 
