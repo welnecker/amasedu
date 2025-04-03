@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -16,15 +15,17 @@ turma = st.text_input("Turma:")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
+# Função para normalizar texto (sem acento, minúsculo, etc)
+def normalizar_texto(txt):
+    txt = txt.lower().strip()
+    txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
+    return ''.join(c for c in txt if c.isalnum())
+
 # 🔐 Função para gerar ID único
 def gerar_id_unico(nome, escola, turma, codigo):
-    def normalizar(txt):
-        txt = txt.lower().strip()
-        txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
-        return ''.join(c for c in txt if c.isalnum())
-    return f"{normalizar(nome)}_{normalizar(escola)}_{normalizar(turma)}_{normalizar(codigo)}"
+    return f"{normalizar_texto(nome)}_{normalizar_texto(escola)}_{normalizar_texto(turma)}_{normalizar_texto(codigo)}"
 
-# 📤 Carregar atividades via Google Sheets API
+# 📤 Carregar atividades da aba ATIVIDADES_GERADAS
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -68,17 +69,18 @@ def carregar_gabarito():
         header = [col.strip().upper() for col in values[0]]
         rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
         df = pd.DataFrame(rows, columns=header)
-        df["QUESTAO"] = df["QUESTAO"].astype(str).str.strip()
+        df["QUESTAO"] = df["QUESTAO"].astype(str).apply(normalizar_texto)
         df["GABARITO"] = df["GABARITO"].astype(str).str.strip().str.upper()
         return df[["QUESTAO", "GABARITO"]]
     except Exception as e:
         st.error(f"Erro ao carregar gabarito: {e}")
         return pd.DataFrame()
 
-dados = carregar_atividades_api()
-
+# Inicializa estado
 if "ids_realizados" not in st.session_state:
     st.session_state.ids_realizados = set()
+
+dados = carregar_atividades_api()
 
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
@@ -92,6 +94,7 @@ if st.button("📥 Gerar Atividade"):
     st.session_state.id_unico_atual = id_unico
     st.rerun()
 
+# Exibe questões
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
     id_unico = st.session_state.id_unico_atual
@@ -120,12 +123,14 @@ if "codigo_confirmado" in st.session_state:
             gabarito_df = carregar_gabarito()
             acertos = 0
             for atividade, resposta in respostas.items():
-                nome_img = atividade.strip()
-                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == nome_img]
+                nome_img = atividade.replace(".jpg", "")
+                nome_img_normalizado = normalizar_texto(nome_img)
+                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == nome_img_normalizado]
                 if not linha_gabarito.empty:
-                    resposta_correta = linha_gabarito["GABARITO"].values[0].strip().upper()
-                    if resposta.upper() == resposta_correta:
+                    gabarito = linha_gabarito.iloc[0]["GABARITO"]
+                    if resposta.upper() == gabarito:
                         acertos += 1
+
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
@@ -142,17 +147,27 @@ if "codigo_confirmado" in st.session_state:
                 insertDataOption="INSERT_ROWS",
                 body={"values": [linha_unica]}
             ).execute()
+
             st.success(f"✅ Respostas enviadas com sucesso! Você acertou {acertos}/{len(respostas)}.")
             st.session_state.ids_realizados.add(id_unico)
             st.session_state.resultado_final = f"{acertos}/{len(respostas)}"
             st.session_state.show_result = True
+
+            # Reset controlado da sessão
             preservar = st.session_state.ids_realizados.copy()
+            resultado = st.session_state.resultado_final
             st.cache_data.clear()
             for chave in list(st.session_state.keys()):
-                if chave not in ["ids_realizados", "resultado_final", "show_result"]:
+                if chave not in ["ids_realizados"]:
                     del st.session_state[chave]
+            st.session_state.ids_realizados = preservar
+            st.session_state.resultado_final = resultado
+            st.session_state.show_result = True
+            st.rerun()
+
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
 
+# Resultado após envio
 if st.session_state.get("show_result"):
     st.success(f"✅ Respostas já enviadas. Você acertou: {st.session_state['resultado_final']}")
