@@ -80,8 +80,13 @@ if st.button("📥 Gerar Atividade"):
 
 # --- Exibir questões após confirmação ---
 if "codigo_confirmado" in st.session_state:
-    codigo_atividade = st.session_state.codigo_confirmado
-    id_unico = st.session_state.id_unico_atual
+    codigo_atividade = st.session_state.get("codigo_confirmado")
+id_unico = st.session_state.get("id_unico_atual")
+
+if not all([codigo_atividade, id_unico]):
+    st.warning("❌ Algo deu errado ao recuperar os dados da atividade.")
+    st.stop()
+
 
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
