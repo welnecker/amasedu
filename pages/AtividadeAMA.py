@@ -135,8 +135,9 @@ with col_gerar:
                 codigo_atividade = gerar_codigo_aleatorio()
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-                # Salvar atividades com código
-                linhas = [[codigo_atividade, atividade, timestamp] for atividade in atividades]
+                # Geração da linha única com código, timestamp e atividades
+                linha_unica = [codigo_atividade, timestamp] + atividades
+
                 creds = Credentials.from_service_account_info(
                     st.secrets["gcp_service_account"],
                     scopes=["https://www.googleapis.com/auth/spreadsheets"]
@@ -148,13 +149,13 @@ with col_gerar:
                     range="ATIVIDADES_GERADAS!A1",
                     valueInputOption="USER_ENTERED",
                     insertDataOption="INSERT_ROWS",
-                    body={"values": linhas}
+                    body={"values": [linha_unica]}
                 ).execute()
 
-                # Limpa o cache depois do append
+                # Limpa o cache depois de atualizar os dados
                 st.cache_data.clear()
 
-                # Salvar log do cabeçalho
+                # Log de cabeçalho
                 dados_log = {
                     "Escola": escola,
                     "Professor": professor,
@@ -193,7 +194,9 @@ with col_gerar:
                     st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
 
             except Exception as e:
-                st.error(f"❌ Erro ao gerar PDF ou salvar dados: {str(e)}")
+                st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
+
+
 
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
