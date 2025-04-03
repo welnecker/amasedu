@@ -1,8 +1,6 @@
 
 import streamlit as st
 import pandas as pd
-import requests
-from io import StringIO
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
@@ -16,10 +14,7 @@ nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
 serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
 
-# --- URL DA PLANILHA COM ATIVIDADES GERADAS ---
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-
+# --- CARREGAR ATIVIDADES COM API ---
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -38,10 +33,8 @@ def carregar_atividades_api():
         if not values or len(values) < 2:
             return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
 
-        df = pd.DataFrame(values[1:], columns=values[0])
-        df.columns = df.columns.str.strip().str.upper()
+        df = pd.DataFrame(values[1:], columns=[col.strip().upper() for col in values[0]])
 
-        # Verificação das colunas essenciais
         if not {"CODIGO", "ATIVIDADE"}.issubset(df.columns):
             st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
             return pd.DataFrame()
@@ -50,14 +43,11 @@ def carregar_atividades_api():
         df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
 
         return df[["CODIGO", "ATIVIDADE"]]
-    
     except Exception as e:
         st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
 
-# Carrega as atividades via API agora
 dados = carregar_atividades_api()
-
 
 # --- CÓDIGO DO PROFESSOR ---
 st.subheader("Código da atividade")
@@ -69,16 +59,12 @@ if st.button("📥 Gerar Atividade"):
         st.stop()
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
 
-# Após clique, continua com a lógica mesmo após o reload
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
 
     if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
         st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
         st.stop()
-
-    dados["CODIGO"] = dados["CODIGO"].astype(str).str.strip().str.upper()
-    dados["ATIVIDADE"] = dados["ATIVIDADE"].astype(str).str.strip()
 
     dados_filtrados = dados[
         (dados["CODIGO"] == codigo_atividade) &
