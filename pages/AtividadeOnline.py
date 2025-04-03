@@ -126,29 +126,28 @@ if "codigo_confirmado" in st.session_state:
             service = build("sheets", "v4", credentials=creds)
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linhas = [
-                [timestamp, codigo_atividade, nome_aluno, escola, turma, atividade, resposta]
-                for atividade, resposta in respostas.items()
-            ]
+            linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
+            for atividade, resposta in respostas.items():
+                linha_unica.extend([atividade, resposta])
 
             service.spreadsheets().values().append(
                 spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
                 range="ATIVIDADES!A1",
                 valueInputOption="USER_ENTERED",
                 insertDataOption="INSERT_ROWS",
-                body={"values": linhas}
+                body={"values": [linha_unica]}
             ).execute()
 
             # ✅ Sucesso: bloquear reenvio e reiniciar app
             st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
-
             st.session_state.ids_realizados.add(id_unico)
             preservar = st.session_state.ids_realizados.copy()
             st.cache_data.clear()
+
             for chave in list(st.session_state.keys()):
                 del st.session_state[chave]
-            st.session_state.ids_realizados = preservar
 
+            st.session_state.ids_realizados = preservar
             st.rerun()
 
         except Exception as e:
