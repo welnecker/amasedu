@@ -8,8 +8,8 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
 # 📌 Dados do aluno
-st.subheader("Preencha seus dados abaixo:")
-nome_aluno = st.text_input("Nome do Aluno:")
+st.subheader("Estudante: Preencha seus dados abaixo:")
+nome_aluno = st.text_input("Nome:")
 escola = st.text_input("Escola:")
 turma = st.text_input("Turma:")
 
