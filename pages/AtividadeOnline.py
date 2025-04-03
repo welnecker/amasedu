@@ -119,16 +119,20 @@ if "codigo_confirmado" in st.session_state:
         if any(resposta is None for resposta in respostas.values()):
             st.warning("⚠️ Existe alguma questão não respondida!")
             st.stop()
+
         try:
             gabarito_df = carregar_gabarito()
+            gabarito_df["QUESTAO"] = gabarito_df["QUESTAO"].astype(str).str.strip()
+            gabarito_df["GABARITO"] = gabarito_df["GABARITO"].astype(str).str.strip().str.upper()
+
             acertos = 0
             for atividade, resposta in respostas.items():
-                nome_img = atividade.replace(".jpg", "")
-                nome_img_normalizado = normalizar_texto(nome_img)
-                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == nome_img_normalizado]
+                atividade_limpa = atividade.replace(".jpg", "").strip()
+                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == atividade_limpa]
+
                 if not linha_gabarito.empty:
-                    gabarito = linha_gabarito.iloc[0]["GABARITO"]
-                    if resposta.upper() == gabarito:
+                    resposta_correta = linha_gabarito.iloc[0]["GABARITO"]
+                    if resposta.upper() == resposta_correta:
                         acertos += 1
 
             creds = Credentials.from_service_account_info(
@@ -140,6 +144,7 @@ if "codigo_confirmado" in st.session_state:
             linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
             for atividade, resposta in respostas.items():
                 linha_unica.extend([atividade, resposta])
+
             service.spreadsheets().values().append(
                 spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
                 range="ATIVIDADES!A1",
@@ -153,20 +158,17 @@ if "codigo_confirmado" in st.session_state:
             st.session_state.resultado_final = f"{acertos}/{len(respostas)}"
             st.session_state.show_result = True
 
-            # Reset controlado da sessão
+            # Preserva o estado e reinicia para limpar tela
             preservar = st.session_state.ids_realizados.copy()
-            resultado = st.session_state.resultado_final
             st.cache_data.clear()
             for chave in list(st.session_state.keys()):
-                if chave not in ["ids_realizados"]:
+                if chave not in ["ids_realizados", "resultado_final", "show_result"]:
                     del st.session_state[chave]
-            st.session_state.ids_realizados = preservar
-            st.session_state.resultado_final = resultado
-            st.session_state.show_result = True
-            st.rerun()
 
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
+
+
 
 # Resultado após envio
 if st.session_state.get("show_result"):
