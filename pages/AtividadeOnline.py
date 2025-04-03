@@ -105,66 +105,66 @@ if "codigo_confirmado" in st.session_state:
 
     # 📤 Enviar respostas
     # 📤 Botão de envio
-if st.button("📤 Enviar respostas"):
-    if not nome_aluno or not escola or not turma:
-        st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
-        st.stop()
+# ✅ Apenas exibe o botão se as questões e respostas já foram carregadas
+if "respostas" in locals() or "respostas" in globals():
+    if st.button("📤 Enviar respostas"):
+        if not nome_aluno or not escola or not turma:
+            st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
+            st.stop()
 
-    if any(resposta is None for resposta in respostas.values()):
-        st.warning("⚠️ Existe alguma questão não respondida!")
-        st.stop()
+        if any(resposta is None for resposta in respostas.values()):
+            st.warning("⚠️ Existe alguma questão não respondida!")
+            st.stop()
 
-    try:
-        # Conecta à API do Google Sheets
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
-        service = build("sheets", "v4", credentials=creds)
+        try:
+            creds = Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            service = build("sheets", "v4", credentials=creds)
 
-        # Carrega gabarito da aba MATEMATICA
-        result_gab = service.spreadsheets().values().get(
-            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-            range="MATEMATICA!A:B"
-        ).execute()
-        values = result_gab.get("values", [])[1:]  # Ignora cabeçalho
-        gabarito_dict = {linha[0]: linha[1].strip().upper() for linha in values if len(linha) >= 2}
+            # Gabarito
+            result_gab = service.spreadsheets().values().get(
+                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                range="MATEMATICA!A:B"
+            ).execute()
+            values = result_gab.get("values", [])[1:]
+            gabarito_dict = {linha[0]: linha[1].strip().upper() for linha in values if len(linha) >= 2}
 
-        # Calcula acertos
-        total = len(respostas)
-        acertos = sum(
-            1 for atividade, resposta in respostas.items()
-            if gabarito_dict.get(atividade) == resposta
-        )
+            # Acertos
+            total = len(respostas)
+            acertos = sum(
+                1 for atividade, resposta in respostas.items()
+                if gabarito_dict.get(atividade) == resposta
+            )
 
-        # Registra as respostas em uma única linha
-        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
-        for atividade, resposta in respostas.items():
-            linha_unica.extend([atividade, resposta])
+            # Registro em linha única
+            timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            linha_unica = [timestamp, codigo_atividade, nome_aluno, escola, turma]
+            for atividade, resposta in respostas.items():
+                linha_unica.extend([atividade, resposta])
 
-        service.spreadsheets().values().append(
-            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-            range="ATIVIDADES!A1",
-            valueInputOption="USER_ENTERED",
-            insertDataOption="INSERT_ROWS",
-            body={"values": [linha_unica]}
-        ).execute()
+            service.spreadsheets().values().append(
+                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                range="ATIVIDADES!A1",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [linha_unica]}
+            ).execute()
 
-        # Feedback para o aluno
-        st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
-        st.info(f"📊 Você acertou {acertos} de {total} questões.")
+            st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
+            st.info(f"📊 Você acertou {acertos} de {total} questões.")
 
-        # Protege contra reenvio
-        st.session_state.ids_realizados.add(id_unico)
-        preservar = st.session_state.ids_realizados.copy()
-        st.cache_data.clear()
-        for chave in list(st.session_state.keys()):
-            del st.session_state[chave]
-        st.session_state.ids_realizados = preservar
-        st.rerun()
+            st.session_state.ids_realizados.add(id_unico)
+            preservar = st.session_state.ids_realizados.copy()
+            st.cache_data.clear()
+            for chave in list(st.session_state.keys()):
+                del st.session_state[chave]
+            st.session_state.ids_realizados = preservar
+            st.rerun()
 
-    except Exception as e:
-        st.error(f"Erro ao enviar respostas: {e}")
+        except Exception as e:
+            st.error(f"Erro ao enviar respostas: {e}")
+
 
 
