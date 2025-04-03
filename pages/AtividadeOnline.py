@@ -123,7 +123,7 @@ if "codigo_confirmado" in st.session_state:
 
             result = service.spreadsheets().values().get(
                 spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                range="MATEMATIVA!A:B"
+                range="MATEMATICA!A:B"
             ).execute()
 
             values = result.get("values", [])
