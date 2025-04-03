@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -12,7 +11,7 @@ st.title("💡 Atividade Online - AMA 2025")
 st.subheader("Identificação do aluno")
 nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
-serie = st.selectbox("Série:", ["Escolha..."] + [f"{i}º ano" for i in range(1, 10)])
+turma = st.text_input("Turma:")
 
 # --- CARREGAR ATIVIDADES COM API ---
 @st.cache_data(show_spinner=False)
@@ -34,16 +33,13 @@ def carregar_atividades_api():
             return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
 
         header = [col.strip().upper() for col in values[0]]
-        # Garante que cada linha tenha o mesmo número de colunas do cabeçalho
         rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
-
         df = pd.DataFrame(rows, columns=header)
 
         if not {"CODIGO", "ATIVIDADE", "TIMESTAMP"}.issubset(df.columns):
             st.error("A planilha precisa conter as colunas: CODIGO, ATIVIDADE, TIMESTAMP.")
             return pd.DataFrame()
 
-        # Normalização das colunas principais
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
         df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
         df["TIMESTAMP"] = pd.to_datetime(df["TIMESTAMP"], errors="coerce")
@@ -59,13 +55,15 @@ dados = carregar_atividades_api()
 st.subheader("Código fornecido pelo professor")
 codigo_atividade = st.text_input("Digite o código da atividade (ex: ABC123):")
 
-# Verifica se aluno preencheu tudo antes de permitir gerar
+# Validação dos dados do aluno antes de mostrar atividades
 if st.button("📥 Gerar Atividade"):
-    if not all([nome_aluno.strip(), escola.strip(), serie != "Escolha...", codigo_atividade.strip()]):
+    if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
         st.stop()
+
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
 
+# Após confirmação
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
 
@@ -100,7 +98,7 @@ if "codigo_confirmado" in st.session_state:
         respostas[atividade] = resposta
 
     if st.button("📤 Enviar respostas"):
-        if not nome_aluno or escola.strip() == "" or serie == "Escolha...":
+        if not nome_aluno or escola.strip() == "" or turma.strip() == "":
             st.warning("Por favor, preencha todos os campos antes de enviar.")
             st.stop()
 
@@ -113,7 +111,7 @@ if "codigo_confirmado" in st.session_state:
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             linhas = [
-                [timestamp, codigo_atividade, nome_aluno, escola, serie, atividade, resposta]
+                [timestamp, codigo_atividade, nome_aluno, escola, turma, atividade, resposta]
                 for atividade, resposta in respostas.items()
             ]
 
