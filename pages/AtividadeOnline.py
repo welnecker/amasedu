@@ -24,7 +24,7 @@ def gerar_id_unico(nome, escola, turma, codigo):
         return ''.join(c for c in txt if c.isalnum())
     return f"{normalizar(nome)}_{normalizar(escola)}_{normalizar(turma)}_{normalizar(codigo)}"
 
-# 📤 Carregar atividades via Google Sheets API
+# 📤 Carrega atividades da API
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -35,26 +35,25 @@ def carregar_atividades_api():
         service = build("sheets", "v4", credentials=creds)
         result = service.spreadsheets().values().get(
             spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-            range="ATIVIDADES_GERADAS!A:C"
+            range="ATIVIDADES_GERADAS!A:Z"  # Amplo para incluir várias colunas de atividade
         ).execute()
 
         values = result.get("values", [])
         if not values or len(values) < 2:
-            return pd.DataFrame(columns=["CODIGO", "ATIVIDADE", "TIMESTAMP"])
+            return pd.DataFrame()
 
         header = [col.strip().upper() for col in values[0]]
         rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
         df = pd.DataFrame(rows, columns=header)
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
-        df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
-        return df[["CODIGO", "ATIVIDADE"]]
+        return df
     except Exception as e:
         st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
 
 dados = carregar_atividades_api()
 
-# ✅ Lista de IDs usados
+# ✅ Proteção contra reenvio
 if "ids_realizados" not in st.session_state:
     st.session_state.ids_realizados = set()
 
@@ -73,21 +72,21 @@ if st.button("📥 Gerar Atividade"):
     st.session_state.id_unico_atual = id_unico
     st.rerun()
 
-# 🧠 Se já existe código confirmado, exibe as atividades
-# 🧠 Se já existe código confirmado, exibe as atividades
+# 🧠 Exibe questões se código for válido
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
     id_unico = st.session_state.id_unico_atual
 
-    # Filtrar a linha correspondente ao código
     linha = dados[dados["CODIGO"] == codigo_atividade]
-
     if linha.empty:
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
 
-    # Recuperar todas as colunas que começam com 'ATIVIDADE'
-    atividades = [linha[col].values[0] for col in linha.columns if col.startswith("ATIVIDADE") and linha[col].values[0]]
+    atividades = [
+        linha[col].values[0]
+        for col in linha.columns
+        if col.startswith("ATIVIDADE") and linha[col].values[0]
+    ]
 
     st.markdown("---")
     st.subheader("Responda cada questão com atenção, marcando uma das alternativas (você só tem uma tentativa):")
@@ -104,14 +103,9 @@ if "codigo_confirmado" in st.session_state:
         )
         respostas[atividade] = resposta
 
-
-    # 📤 Botão de envio
+    # 📤 Enviar respostas
     if st.button("📤 Enviar respostas"):
-        if not nome_aluno or not escola or not turma:
-            st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
-            st.stop()
-
-        if any(resposta is None for resposta in respostas.values()):
+        if any(r is None for r in respostas.values()):
             st.warning("⚠️ Existe alguma questão não respondida!")
             st.stop()
 
@@ -135,16 +129,16 @@ if "codigo_confirmado" in st.session_state:
                 body={"values": [linha_unica]}
             ).execute()
 
-            # ✅ Sucesso: bloquear reenvio e reiniciar app
             st.success("✅ Respostas enviadas com sucesso! Obrigado por participar.")
             st.session_state.ids_realizados.add(id_unico)
+
+            # 🧹 Limpa sessão (mas preserva IDs bloqueados)
             preservar = st.session_state.ids_realizados.copy()
             st.cache_data.clear()
-
             for chave in list(st.session_state.keys()):
                 del st.session_state[chave]
-
             st.session_state.ids_realizados = preservar
+
             st.rerun()
 
         except Exception as e:
