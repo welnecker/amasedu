@@ -74,30 +74,26 @@ if st.button("📥 Gerar Atividade"):
     st.rerun()
 
 # 🧠 Se já existe código confirmado, exibe as atividades
+# 🧠 Se já existe código confirmado, exibe as atividades
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
     id_unico = st.session_state.id_unico_atual
 
-    if "CODIGO" not in dados.columns or "ATIVIDADE" not in dados.columns:
-        st.error("A planilha está sem as colunas necessárias (CODIGO, ATIVIDADE).")
-        st.stop()
+    # Filtrar a linha correspondente ao código
+    linha = dados[dados["CODIGO"] == codigo_atividade]
 
-    dados_filtrados = dados[
-        (dados["CODIGO"] == codigo_atividade) &
-        (dados["ATIVIDADE"].notna()) &
-        (dados["ATIVIDADE"] != "")
-    ]
-
-    if dados_filtrados.empty:
+    if linha.empty:
         st.warning("Código inválido ou sem atividades associadas.")
         st.stop()
+
+    # Recuperar todas as colunas que começam com 'ATIVIDADE'
+    atividades = [linha[col].values[0] for col in linha.columns if col.startswith("ATIVIDADE") and linha[col].values[0]]
 
     st.markdown("---")
     st.subheader("Responda cada questão com atenção, marcando uma das alternativas (você só tem uma tentativa):")
 
     respostas = {}
-    for idx, row in dados_filtrados.iterrows():
-        atividade = row["ATIVIDADE"]
+    for idx, atividade in enumerate(atividades):
         url = f"https://questoesama.pages.dev/{atividade}.jpg"
         st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
         resposta = st.radio(
@@ -107,6 +103,7 @@ if "codigo_confirmado" in st.session_state:
             index=None
         )
         respostas[atividade] = resposta
+
 
     # 📤 Botão de envio
     if st.button("📤 Enviar respostas"):
