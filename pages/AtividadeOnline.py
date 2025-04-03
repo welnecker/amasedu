@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -7,7 +8,16 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
-# 📌 Dados do aluno
+# Normalização
+def normalizar_texto(txt):
+    txt = txt.lower().strip()
+    txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
+    return ''.join(c for c in txt if c.isalnum())
+
+def gerar_id_unico(nome, escola, turma, codigo):
+    return f"{normalizar_texto(nome)}_{normalizar_texto(escola)}_{normalizar_texto(turma)}_{normalizar_texto(codigo)}"
+
+# Dados do aluno
 st.subheader("Preencha seus dados abaixo:")
 nome_aluno = st.text_input("Nome do Aluno:")
 escola = st.text_input("Escola:")
@@ -15,17 +25,6 @@ turma = st.text_input("Turma:")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
-# Função para normalizar texto (sem acento, minúsculo, etc)
-def normalizar_texto(txt):
-    txt = txt.lower().strip()
-    txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
-    return ''.join(c for c in txt if c.isalnum())
-
-# 🔐 Função para gerar ID único
-def gerar_id_unico(nome, escola, turma, codigo):
-    return f"{normalizar_texto(nome)}_{normalizar_texto(escola)}_{normalizar_texto(turma)}_{normalizar_texto(codigo)}"
-
-# 📤 Carregar atividades da aba ATIVIDADES_GERADAS
 @st.cache_data(show_spinner=False)
 def carregar_atividades_api():
     try:
@@ -50,7 +49,6 @@ def carregar_atividades_api():
         st.error(f"❌ Erro ao acessar a API do Google Sheets: {e}")
         return pd.DataFrame()
 
-# 📥 Carregar gabarito da aba MATEMATICA
 @st.cache_data(show_spinner=False)
 def carregar_gabarito():
     try:
@@ -69,22 +67,21 @@ def carregar_gabarito():
         header = [col.strip().upper() for col in values[0]]
         rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
         df = pd.DataFrame(rows, columns=header)
-        df["QUESTAO"] = df["QUESTAO"].astype(str).apply(normalizar_texto)
+        df["QUESTAO"] = df["QUESTAO"].astype(str).str.strip()
         df["GABARITO"] = df["GABARITO"].astype(str).str.strip().str.upper()
         return df[["QUESTAO", "GABARITO"]]
     except Exception as e:
         st.error(f"Erro ao carregar gabarito: {e}")
         return pd.DataFrame()
 
-# Inicializa estado
+dados = carregar_atividades_api()
+
 if "ids_realizados" not in st.session_state:
     st.session_state.ids_realizados = set()
 
-dados = carregar_atividades_api()
-
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
-        st.warning("⚠️ Por favor, preencha todos os campos antes de visualizar a atividade.")
+        st.warning("⚠️ Por favor, preencha todos os campos.")
         st.stop()
     id_unico = gerar_id_unico(nome_aluno, escola, turma, codigo_atividade)
     if id_unico in st.session_state.ids_realizados:
@@ -94,17 +91,16 @@ if st.button("📥 Gerar Atividade"):
     st.session_state.id_unico_atual = id_unico
     st.rerun()
 
-# Exibe questões
 if "codigo_confirmado" in st.session_state:
     codigo_atividade = st.session_state.codigo_confirmado
     id_unico = st.session_state.id_unico_atual
     linha = dados[dados["CODIGO"] == codigo_atividade]
     if linha.empty:
-        st.warning("Código inválido ou sem atividades associadas.")
+        st.warning("Código inválido.")
         st.stop()
     atividades = [linha[col].values[0] for col in linha.columns if col.startswith("ATIVIDADE") and linha[col].values[0]]
     st.markdown("---")
-    st.subheader("Responda cada questão com atenção, marcando uma das alternativas (você só tem uma tentativa):")
+    st.subheader("Responda com atenção:")
     respostas = {}
     for idx, atividade in enumerate(atividades):
         url = f"https://questoesama.pages.dev/{atividade}.jpg"
@@ -113,26 +109,18 @@ if "codigo_confirmado" in st.session_state:
         respostas[atividade] = resposta
 
     if st.button("📤 Enviar respostas"):
-        if not nome_aluno or not escola or not turma:
-            st.warning("⚠️ Por favor, preencha todos os campos antes de enviar.")
+        if any(r is None for r in respostas.values()):
+            st.warning("⚠️ Todas as questões devem ser respondidas.")
             st.stop()
-        if any(resposta is None for resposta in respostas.values()):
-            st.warning("⚠️ Existe alguma questão não respondida!")
-            st.stop()
-
         try:
             gabarito_df = carregar_gabarito()
-            gabarito_df["QUESTAO"] = gabarito_df["QUESTAO"].astype(str).str.strip()
-            gabarito_df["GABARITO"] = gabarito_df["GABARITO"].astype(str).str.strip().str.upper()
-
             acertos = 0
             for atividade, resposta in respostas.items():
-                atividade_limpa = atividade.replace(".jpg", "").strip()
-                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == atividade_limpa]
-
+                questao = atividade.strip()
+                linha_gabarito = gabarito_df[gabarito_df["QUESTAO"] == questao]
                 if not linha_gabarito.empty:
-                    resposta_correta = linha_gabarito.iloc[0]["GABARITO"]
-                    if resposta.upper() == resposta_correta:
+                    gabarito = linha_gabarito["GABARITO"].values[0]
+                    if resposta.strip().upper() == gabarito:
                         acertos += 1
 
             creds = Credentials.from_service_account_info(
@@ -155,21 +143,5 @@ if "codigo_confirmado" in st.session_state:
 
             st.success(f"✅ Respostas enviadas com sucesso! Você acertou {acertos}/{len(respostas)}.")
             st.session_state.ids_realizados.add(id_unico)
-            st.session_state.resultado_final = f"{acertos}/{len(respostas)}"
-            st.session_state.show_result = True
-
-            # Preserva o estado e reinicia para limpar tela
-            preservar = st.session_state.ids_realizados.copy()
-            st.cache_data.clear()
-            for chave in list(st.session_state.keys()):
-                if chave not in ["ids_realizados", "resultado_final", "show_result"]:
-                    del st.session_state[chave]
-
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
-
-
-
-# Resultado após envio
-if st.session_state.get("show_result"):
-    st.success(f"✅ Respostas já enviadas. Você acertou: {st.session_state['resultado_final']}")
