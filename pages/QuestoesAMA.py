@@ -57,6 +57,9 @@ st.markdown(
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
+# --- TÍTULO PRINCIPAL ---
+st.title("ATIVIDADE AMA 2025")
+
 # --- CARREGAMENTO DE DADOS ---
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=1840243180&single=true&output=csv"
@@ -107,24 +110,3 @@ if not base_seges.empty:
     escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
     turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
     turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
-
-# --- FILTROS ---
-st.markdown("### Escolha Série, Habilidade e Descritor.")
-col_serie, col_habilidade, col_descritor = st.columns(3)
-
-serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
-habilidade = col_habilidade.selectbox("**HABILIDADE**",
-    ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
-    key="habilidade"
-)
-descritor = col_descritor.selectbox("**DESCRITOR**",
-    ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
-    key="descritor"
-)
-
-# --- TÍTULO PRINCIPAL ---
-st.title("ATIVIDADE AMA 2025")
-
-# --- EXIBIÇÃO DE QUESTÕES ---
-if descritor != "Escolha...":
-    ...
