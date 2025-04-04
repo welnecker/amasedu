@@ -74,13 +74,7 @@ if codigo:
         st.stop()
 
     atividades_escolhidas = [a for a in atividades_do_codigo.values[0][2:] if a]
-    st.subheader("✅ Atividades Escolhidas pelo Professor:")
-
-    for i, nome in enumerate(atividades_escolhidas, 1):
-        gabarito = df_gabarito[df_gabarito["ATIVIDADE"] == nome]["GABARITO"]
-        letra = gabarito.values[0] if not gabarito.empty else "?"
-        st.markdown(f"{i}. **{nome}** - Gabarito: **{letra}**")
-
+    
     # Filtrar respostas enviadas
     if "CODIGO" not in df_respostas.columns:
         st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
