@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -75,6 +76,7 @@ if "ids_realizados" not in st.session_state:
     st.session_state.ids_realizados = set()
 
 dados = carregar_atividades()
+
 if st.button("📥 Gerar Atividade"):
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos.")
@@ -85,6 +87,7 @@ if st.button("📥 Gerar Atividade"):
         st.stop()
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
     st.session_state.id_unico_atual = id_unico
+    st.session_state.respostas_enviadas = False
     st.rerun()
 
 if "codigo_confirmado" in st.session_state:
@@ -101,15 +104,14 @@ if "codigo_confirmado" in st.session_state:
     for idx, atividade in enumerate(atividades):
         url = f"https://questoesama.pages.dev/{atividade}.jpg"
         st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
-        resposta = st.radio("", ["A", "B", "C", "D", "E"], key=f"resp_{idx}", index=None)
+        resposta = st.radio("", ["A", "B", "C", "D", "E"], key=f"resp_{atividade}", index=None)
         respostas[atividade] = resposta
 
-        respostas_enviadas = st.session_state.get("respostas_enviadas", False)
-
+    respostas_enviadas = st.session_state.get("respostas_enviadas", False)
     if st.button("📤 Enviar respostas", disabled=respostas_enviadas):
-     if respostas_enviadas:
-        st.warning("⛔ Você já respondeu essa atividade.")
-        st.stop()
+        if respostas_enviadas:
+            st.warning("⛔ Você já respondeu essa atividade.")
+            st.stop()
 
         if any(r is None for r in respostas.values()):
             st.warning("⚠️ Há questões não respondidas.")
@@ -132,8 +134,6 @@ if "codigo_confirmado" in st.session_state:
             linha_envio = [timestamp, codigo_atividade, nome_aluno, escola, turma]
             for atividade, resposta in respostas.items():
                 linha_envio.extend([atividade, resposta])
-            linha_envio.append(f"{acertos}/{len(respostas)}")
-
             service.spreadsheets().values().append(
                 spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
                 range="ATIVIDADES!A1",
@@ -141,16 +141,8 @@ if "codigo_confirmado" in st.session_state:
                 insertDataOption="INSERT_ROWS",
                 body={"values": [linha_envio]}
             ).execute()
-
-            st.success(f"✅ Respostas enviadas com sucesso! Você acertou {acertos}/{len(respostas)}.")
+            st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(respostas)}.")
             st.session_state.ids_realizados.add(id_unico)
             st.session_state.respostas_enviadas = True
-
         except Exception as e:
             st.error(f"Erro ao enviar respostas: {e}")
-
-# ✅ Impede que o aluno acesse novamente a mesma atividade com os mesmos dados
-if "respostas_enviadas" in st.session_state:
-    st.warning("⛔ Você já respondeu essa atividade. Volte para iniciar uma nova.")
-elif gerar_id_unico(nome_aluno, escola, turma, codigo_atividade) in st.session_state.ids_realizados:
-    st.warning("⛔ Você já respondeu essa atividade. Volte para iniciar uma nova.")
