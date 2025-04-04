@@ -105,7 +105,7 @@ if "codigo_confirmado" in st.session_state:
         respostas[atividade] = resposta
 
         if st.button("📤 Enviar respostas") and "respostas_enviadas" not in st.session_state:
-        if any(r is None for r in respostas.values()):
+         if any(r is None for r in respostas.values()):
             st.warning("⚠️ Há questões não respondidas.")
             st.stop()
 
