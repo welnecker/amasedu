@@ -59,6 +59,25 @@ st.markdown(
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 # --- TÍTULO PRINCIPAL ---
+# --- SALVAR VALORES DOS FILTROS PARA USO POSTERIOR ---
+st.session_state.selecionado_sre = sre if 'sre' in locals() else None
+st.session_state.selecionado_escola = escola if 'escola' in locals() else None
+st.session_state.selecionado_turma = turma if 'turma' in locals() else None
+
+# --- FILTROS ADICIONAIS ---
+colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
+if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
+    st.markdown("### Escolha a SRE, Escola e Turma:")
+    col_sre, col_escola, col_turma = st.columns(3)
+
+    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
+    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
+    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
+    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
+    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
+else:
+    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
+
 st.title("ATIVIDADE AMA 2025")
 
 # --- CARREGAMENTO DE DADOS ---
