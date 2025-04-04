@@ -92,30 +92,46 @@ if codigo:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
                 # Criar dicionário com os gabaritos escolhidos pelo professor
-        gabaritos_dict = {
-            atividade: df_gabarito[df_gabarito["ATIVIDADE"] == atividade]["GABARITO"].values[0]
-            for atividade in atividades_escolhidas
-        }
+        # Criar dicionário com os gabaritos escolhidos pelo professor
+      gabaritos_dict = {
+    atividade: df_gabarito[df_gabarito["ATIVIDADE"] == atividade]["GABARITO"].values[0]
+    for atividade in atividades_escolhidas
+}
 
-        st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
+# Exibir atividades escolhidas pelo professor em duas colunas
+st.markdown("### ✅ Atividades Escolhidas pelo Professor:")
+col1, col2 = st.columns(2)
+for i, nome in enumerate(atividades_escolhidas):
+    gabarito = gabaritos_dict.get(nome, "?")
+    col = col1 if i % 2 == 0 else col2
+    col.markdown(f"**{i+1}. {nome}** - Gabarito: **{gabarito}**")
 
-        for _, row in respostas_do_codigo.iterrows():
-            nome = row["NOME"]
-            escola = row["ESCOLA"]
-            turma = row["TURMA"]
+# Exibir respostas por aluno de forma horizontal e compacta
+st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
 
-            st.markdown(f"<b>{nome} - {escola} ({turma})</b>", unsafe_allow_html=True)
+for _, row in respostas_do_codigo.iterrows():
+    nome = row["NOME"]
+    escola = row["ESCOLA"]
+    turma = row["TURMA"]
 
-            linha_resumo = ""
-            for i in range(5, len(row), 3):  # Q, R, S
-                q = row[i] if i < len(row) else ""
-                r = row[i+1] if i+1 < len(row) else ""
-                s = row[i+2] if i+2 < len(row) else ""
+    acertos = 0
+    total = 0
+    linha_resumo = ""
+    for i in range(5, len(row), 3):  # Q, R, S
+        q = row[i] if i < len(row) else ""
+        r = row[i+1] if i+1 < len(row) else ""
+        s = row[i+2] if i+2 < len(row) else ""
 
-                g = gabaritos_dict.get(q, "?")
-                correto = "✔️" if s == "Certo" else "❌"
-                linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
+        g = gabaritos_dict.get(q, "?")
+        correto = "✔️" if s == "Certo" else "❌"
+        if s == "Certo":
+            acertos += 1
+        if q:
+            total += 1
+        linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
 
-            st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
-            st.markdown("---")
+    st.markdown(f"<b>{nome} - {escola} ({turma})</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
+    st.markdown("---")
+
 
