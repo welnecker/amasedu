@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -71,36 +72,17 @@ def carregar_gabarito():
         st.error(f"Erro ao carregar gabarito: {e}")
         return pd.DataFrame()
 
-@st.cache_data(show_spinner=False)
-def verificar_resposta_enviada(id_unico):
-    try:
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
-        )
-        service = build("sheets", "v4", credentials=creds)
-        result = service.spreadsheets().values().get(
-            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-            range="ATIVIDADES!A1:Z"
-        ).execute()
-        values = result.get("values", [])[1:]
-        for linha in values:
-            linha_str = ' '.join(linha).lower()
-            if normalizar_texto(id_unico) in linha_str:
-                return True
-        return False
-    except:
-        return False
+if "ids_realizados" not in st.session_state:
+    st.session_state.ids_realizados = set()
 
 dados = carregar_atividades()
-gabarito_df = carregar_gabarito()
 
-if st.button("📥 Gerar Atividade"):
+if st.button("📥 Gerar Atividade") and "atividades_utilizadas" not in st.session_state:
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos.")
         st.stop()
     id_unico = gerar_id_unico(nome_aluno, escola, turma, codigo_atividade)
-    if verificar_resposta_enviada(id_unico):
+    if id_unico in st.session_state.ids_realizados:
         st.warning("❌ Você já respondeu essa atividade.")
         st.stop()
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
@@ -114,78 +96,80 @@ if "codigo_confirmado" in st.session_state:
     if linha.empty:
         st.warning("Código inválido ou sem questões.")
         st.stop()
+
     atividades = [linha[col].values[0] for col in linha.columns if col.startswith("ATIVIDADE") and linha[col].values[0]]
-    st.markdown("---")
-    st.subheader("Responda cada questão marcando uma alternativa:")
 
-    if "respostas" not in st.session_state:
-        st.session_state.respostas = {}
-    if "acertos" not in st.session_state:
-        st.session_state.acertos = None
+    if "atividades_utilizadas" not in st.session_state:
+        st.session_state.atividades_utilizadas = atividades
 
-    for idx, atividade in enumerate(atividades):
-        url = f"https://questoesama.pages.dev/{atividade}.jpg"
-        gabarito_linha = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
-        gabarito = gabarito_linha["GABARITO"].values[0] if not gabarito_linha.empty else None
+    gabarito_df = carregar_gabarito()
+    opcoes = ["A", "B", "C", "D", "E"]
 
-        st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
+    if "respostas_salvas" not in st.session_state:
+        st.subheader("Responda cada questão marcando uma alternativa:")
+        respostas = {}
+        for idx, atividade in enumerate(atividades):
+            url = f"https://questoesama.pages.dev/{atividade}.jpg"
+            st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
+            resposta = st.radio("", opcoes, key=f"resp_{idx}", index=None)
+            respostas[atividade] = resposta
 
-        if st.session_state.acertos is None:
-            resposta = st.radio("", ["A", "B", "C", "D", "E"], key=f"resposta_{idx}", index=None)
-            st.session_state.respostas[atividade] = resposta
-        else:
-            resposta = st.session_state.respostas.get(atividade)
-            icone = "✅" if resposta == gabarito else "❌"
-            opcoes = ["A", "B", "C", "D", "E"]
-if resposta in opcoes:
-    st.radio(
-        f"{icone} Você marcou:", opcoes,
-        index=opcoes.index(resposta),
-        key=f"resposta_{idx}",
-        disabled=True
-    )
-else:
-    st.radio(
-        f"{icone} Você marcou:", opcoes,
-        index=0,  # fallback para A
-        key=f"resposta_{idx}",
-        disabled=True
-    )
+        if st.button("📤 Enviar respostas"):
+            if any(r is None for r in respostas.values()):
+                st.warning("⚠️ Há questões não respondidas.")
+                st.stop()
 
+            try:
+                acertos = 0
+                for atividade, resposta in respostas.items():
+                    linha_gabarito = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
+                    if not linha_gabarito.empty and linha_gabarito["GABARITO"].values[0] == resposta.upper():
+                        acertos += 1
 
-    if st.session_state.acertos is None and st.button("📤 Enviar respostas"):
-        if any(r is None for r in st.session_state.respostas.values()):
-            st.warning("⚠️ Há questões não respondidas.")
-            st.stop()
-        try:
-            acertos = 0
-            for atividade, resposta in st.session_state.respostas.items():
-                linha_gabarito = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
-                if not linha_gabarito.empty and linha_gabarito["GABARITO"].values[0] == resposta.upper():
-                    acertos += 1
+                creds = Credentials.from_service_account_info(
+                    st.secrets["gcp_service_account"],
+                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                )
+                service = build("sheets", "v4", credentials=creds)
+                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                linha_envio = [timestamp, codigo_atividade, nome_aluno, escola, turma]
+                for atividade, resposta in respostas.items():
+                    linha_envio.extend([atividade, resposta])
+                service.spreadsheets().values().append(
+                    spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                    range="ATIVIDADES!A1",
+                    valueInputOption="USER_ENTERED",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": [linha_envio]}
+                ).execute()
+                st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(respostas)}.")
+                st.session_state.ids_realizados.add(id_unico)
+                st.session_state.respostas_salvas = respostas
+                st.session_state.resultado_final = acertos
 
-            creds = Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            except Exception as e:
+                st.error(f"Erro ao enviar respostas: {e}")
+
+    elif "respostas_salvas" in st.session_state:
+        respostas = st.session_state.respostas_salvas
+        acertos = 0
+        for idx, atividade in enumerate(st.session_state.atividades_utilizadas):
+            resposta = respostas.get(atividade, "")
+            linha_gabarito = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
+            correta = linha_gabarito["GABARITO"].values[0] if not linha_gabarito.empty else ""
+
+            acertou = resposta.upper() == correta.upper()
+            icone = "✅" if acertou else "❌"
+            if acertou:
+                acertos += 1
+
+            st.image(f"https://questoesama.pages.dev/{atividade}.jpg", caption=f"Atividade {idx + 1}", use_container_width=True)
+            st.radio(
+                f"{icone} Você marcou:",
+                options=opcoes,
+                index=opcoes.index(resposta.upper()) if resposta.upper() in opcoes else 0,
+                key=f"resposta_{idx}_verificada",
+                disabled=True
             )
-            service = build("sheets", "v4", credentials=creds)
-            timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_envio = [timestamp, codigo_atividade, nome_aluno, escola, turma]
-            for atividade, resposta in st.session_state.respostas.items():
-                linha_envio.extend([atividade, resposta])
-            service.spreadsheets().values().append(
-                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                range="ATIVIDADES!A1",
-                valueInputOption="USER_ENTERED",
-                insertDataOption="INSERT_ROWS",
-                body={"values": [linha_envio]}
-            ).execute()
 
-            st.session_state.acertos = acertos
-            st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(st.session_state.respostas)}.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erro ao enviar respostas: {e}")
-
-if st.session_state.get("acertos") is not None:
-    st.success(f"✅ Você acertou {st.session_state.acertos}/{len(st.session_state.respostas)}.")
+        st.success(f"✅ Respostas já enviadas. Você acertou: {acertos}/{len(st.session_state.atividades_utilizadas)}")
