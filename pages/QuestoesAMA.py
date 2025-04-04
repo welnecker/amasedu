@@ -98,6 +98,7 @@ def carregar_base_seges():
 
 base_seges = carregar_base_seges()
 colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
+colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
 if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     st.markdown("### Escolha a SRE, Escola e Turma:")
     col_sre, col_escola, col_turma = st.columns(3)
