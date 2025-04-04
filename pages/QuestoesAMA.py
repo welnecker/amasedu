@@ -56,10 +56,10 @@ st.markdown(
 )
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
-st.title("ATIVIDADE AMA 2025")
 
 # --- CARREGAMENTO DE DADOS ---
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=1840243180&single=true&output=csv"
 
 @st.cache_data(show_spinner=False)
 def carregar_dados():
@@ -75,7 +75,20 @@ def carregar_dados():
     except Exception:
         return None
 
+@st.cache_data(show_spinner=False)
+def carregar_base_seges():
+    try:
+        response = requests.get(URL_BASE_SEGES, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip().str.upper()
+        return df
+    except Exception:
+        return pd.DataFrame()
+
 dados = carregar_dados()
+base_seges = carregar_base_seges()
+
 if dados is None:
     st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
     if st.button("🔄 Tentar novamente"):
@@ -84,6 +97,16 @@ if dados is None:
 
 if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
+
+# --- FILTROS ADICIONAIS ---
+if not base_seges.empty:
+    col_sre, col_escola, col_turma = st.columns(3)
+
+    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
+    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
+    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
+    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
+    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
 
 # --- FILTROS ---
 st.markdown("### Escolha Série, Habilidade e Descritor.")
@@ -99,85 +122,9 @@ descritor = col_descritor.selectbox("**DESCRITOR**",
     key="descritor"
 )
 
+# --- TÍTULO PRINCIPAL ---
+st.title("ATIVIDADE AMA 2025")
+
 # --- EXIBIÇÃO DE QUESTÕES ---
 if descritor != "Escolha...":
-    st.markdown("<hr />", unsafe_allow_html=True)
-    st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
-
-    total_selecionado = len(st.session_state.atividades_exibidas)
-    col_facil, col_medio, col_dificil = st.columns(3)
-    niveis_fixos = {'Facil': ('Fácil', col_facil), 'Medio': ('Médio', col_medio), 'Dificil': ('Difícil', col_dificil)}
-
-    for nivel_nome, (nivel_titulo, coluna) in niveis_fixos.items():
-        with coluna:
-            st.markdown(f"#### {nivel_titulo}")
-            resultados = dados.query(
-                'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
-            )[["ATIVIDADE"]].head(10)
-
-            if resultados.empty:
-                st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
-                continue
-
-            if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
-                for idx, row in resultados.iterrows():
-                    nome_atividade = row["ATIVIDADE"]
-                    if len(st.session_state.atividades_exibidas) >= 10:
-                        break
-                    checkbox_key = f"chk_{idx}"
-                    st.session_state[checkbox_key] = True
-                    if nome_atividade not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(nome_atividade)
-                st.rerun()
-
-            for idx, row in resultados.iterrows():
-                checkbox_key = f"chk_{idx}"
-                nome_atividade = row["ATIVIDADE"]
-                if checkbox_key not in st.session_state:
-                    st.session_state[checkbox_key] = False
-                disabled = (
-                    not st.session_state[checkbox_key] and len(st.session_state.atividades_exibidas) >= 10
-                )
-                checked = st.checkbox(nome_atividade, key=checkbox_key, disabled=disabled)
-
-                if checked and nome_atividade not in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.append(nome_atividade)
-                elif not checked and nome_atividade in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.remove(nome_atividade)
-
-    total = len(st.session_state.atividades_exibidas)
-    st.progress(total / 10 if total <= 10 else 1.0)
-    st.info(f"{total}/10 atividades escolhidas. Role a página para baixo.")
-
-    if total >= 10:
-        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
-
-    st.markdown("""
-    <script>
-        setTimeout(function() {
-            const el = document.getElementById("ancora_botao");
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }, 300);
-    </script>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, nome in enumerate(st.session_state.atividades_exibidas):
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
-
-        st.markdown("<div id='ancora_botao'></div>", unsafe_allow_html=True)
-
-        if st.button("PREENCHER CABEÇALHO"):
-            st.switch_page("pages/AtividadeAMA.py")
-
-if st.button("Recomeçar tudo"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.rerun()
+    ...
