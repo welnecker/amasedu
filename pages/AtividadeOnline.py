@@ -151,12 +151,20 @@ if st.session_state.get("atividades_em_exibicao"):
 
         if id_unico in st.session_state.respostas_salvas:
             acertos_detalhe = st.session_state.respostas_salvas[id_unico]
-            st.markdown("---")
-            for idx, atividade in enumerate(atividades):
-                situacao = acertos_detalhe.get(atividade, "❓")
-                cor = "✅" if situacao == "Certo" else "❌"
-                st.markdown(f"**Atividade {idx+1}:** {cor}")
-            st.markdown("---")
-            if st.button("🔄 Limpar Atividade"):
-                del st.session_state["atividades_em_exibicao"]
-                st.rerun()
+    st.markdown("---")
+    for idx, atividade in enumerate(atividades):
+        situacao = acertos_detalhe.get(atividade, "❓")
+        cor = "✅" if situacao == "Certo" else "❌"
+        st.markdown(f"**Atividade {idx+1}:** {cor}")
+
+    st.markdown("---")
+    if st.button("🔄 Limpar Atividade"):
+        # Limpa a flag para esconder as atividades
+        del st.session_state["atividades_em_exibicao"]
+        # Limpa os radios de resposta
+        for idx in range(len(atividades)):
+            st.session_state.pop(f"resp_{idx}", None)
+        # Remove a resposta salva
+        st.session_state.respostas_salvas.pop(id_unico, None)
+        st.rerun()
+
