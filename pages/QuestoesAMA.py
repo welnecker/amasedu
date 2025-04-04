@@ -59,9 +59,7 @@ st.markdown(
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 # --- TÍTULO PRINCIPAL ---
-st.session_state.selecionado_sre = sre if 'sre' in locals() else None
-st.session_state.selecionado_escola = escola if 'escola' in locals() else None
-st.session_state.selecionado_turma = turma if 'turma' in locals() else None
+
 
 # --- FILTROS ADICIONAIS ---
 colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
@@ -75,7 +73,6 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
     turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
 
-    # Salvar no session_state para uso posterior
     st.session_state.selecionado_sre = sre
     st.session_state.selecionado_escola = escola
     st.session_state.selecionado_turma = turma
@@ -83,6 +80,11 @@ else:
     st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
 
 st.title("ATIVIDADE AMA 2025")
+
+# Salvar valores nos filtros no session_state para usar em outras páginas
+st.session_state.selecionado_sre = sre if 'sre' in locals() else None
+st.session_state.selecionado_escola = escola if 'escola' in locals() else None
+st.session_state.selecionado_turma = turma if 'turma' in locals() else None
 
 # --- CARREGAMENTO DE DADOS ---
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
@@ -115,6 +117,8 @@ def carregar_base_seges():
         return df
     except Exception:
         return pd.DataFrame()
+
+base_seges = carregar_base_seges()
 
 dados = carregar_dados()
 base_seges = carregar_base_seges()
