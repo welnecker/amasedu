@@ -117,6 +117,41 @@ else:
 
 st.title("ATIVIDADE AMA 2025")
 
+# --- CARREGAMENTO DE BASE_SEGES ---
+URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
+
+@st.cache_data(show_spinner=False)
+def carregar_base_seges():
+    def normalizar_coluna(col):
+        import unicodedata
+        return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
+    try:
+        response = requests.get(URL_BASE_SEGES, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = [normalizar_coluna(c) for c in df.columns]
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+base_seges = carregar_base_seges()
+colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
+if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
+    st.markdown("### Escolha a SRE, Escola e Turma:")
+    col_sre, col_escola, col_turma = st.columns(3)
+
+    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
+    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
+    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
+    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
+    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
+
+    st.session_state.selecionado_sre = sre
+    st.session_state.selecionado_escola = escola
+    st.session_state.selecionado_turma = turma
+else:
+    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
+
 # Salvar valores nos filtros no session_state para usar em outras páginas
 st.session_state.selecionado_sre = sre if 'sre' in locals() else None
 st.session_state.selecionado_escola = escola if 'escola' in locals() else None
