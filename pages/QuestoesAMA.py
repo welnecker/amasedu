@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
+import unicodedata
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -80,11 +81,14 @@ def carregar_dados():
 
 @st.cache_data(show_spinner=False)
 def carregar_base_seges():
+    def normalizar_coluna(col):
+        return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
+
     try:
         response = requests.get(URL_BASE_SEGES, timeout=10)
         response.raise_for_status()
         df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip().str.upper()
+        df.columns = [normalizar_coluna(c) for c in df.columns]
         return df
     except Exception:
         return pd.DataFrame()
