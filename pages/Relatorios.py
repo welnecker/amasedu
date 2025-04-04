@@ -20,7 +20,8 @@ if not st.session_state.relatorio_autenticado:
         st.error("❌ Senha incorreta.")
     st.stop()
 
-# --- FUNÇÃO PARA CARREGAR PLANILHA ---
+
+# --- FUNÇÃO DE CARGA ROBUSTA ---
 @st.cache_data
 def carregar_dados(range_nome):
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"])
@@ -34,83 +35,75 @@ def carregar_dados(range_nome):
     values = result.get("values", [])
     if not values or len(values) < 2:
         return pd.DataFrame()
-    
+
     headers = values[0]
+    max_len = max(len(row) for row in values[1:])
+    if len(headers) < max_len:
+        headers += [f"EXTRA_{i}" for i in range(len(headers), max_len)]
+
     data = [row + [None] * (len(headers) - len(row)) for row in values[1:]]
     return pd.DataFrame(data, columns=headers)
 
+
 # --- INTERFACE ---
 st.title("📊 Relatórios de Atividades - AMA 2025")
+st.markdown("Use o campo abaixo para buscar os dados de um código de atividade:")
+
 codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
 
 if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    # Carrega dados
     df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z")
     df_respostas = carregar_dados("ATIVIDADES!A1:Z")
     df_gabarito = carregar_dados("MATEMATICA!A1:N")
 
-    # Normaliza colunas
-    for col in ["CÓDIGO", "CODIGO"]:
-        if col in df_geradas.columns:
-            df_geradas["CODIGO"] = df_geradas[col].astype(str).str.strip().str.upper()
-            break
+    atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo]
+    respostas_do_codigo = df_respostas[df_respostas["CÓDIGO"].str.upper() == codigo]
 
-    if "CÓDIGO" not in df_respostas.columns:
-        st.warning("❌ A coluna CÓDIGO não está presente nas respostas.")
+    if atividades_do_codigo.empty:
+        st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividades_professor = df_geradas[df_geradas["CODIGO"] == codigo]
-    respostas_codigo = df_respostas[df_respostas["CÓDIGO"] == codigo]
-
-    if atividades_professor.empty:
-        st.warning("❌ Código não encontrado na base de atividades geradas.")
-        st.stop()
-
+    # Atividades escolhidas
     st.subheader("✅ Atividades Escolhidas pelo Professor:")
+    atividades_escolhidas = [x for x in atividades_do_codigo.values[0][2:] if x]
+    for i, nome in enumerate(atividades_escolhidas, 1):
+        gabarito = df_gabarito[df_gabarito["ATIVIDADE"] == nome]["GABARITO"]
+        gab = gabarito.values[0] if not gabarito.empty else "?"
+        st.markdown(f"{i}. **{nome}** — Gabarito: `{gab}`")
 
-    atividades_listadas = [item for item in atividades_professor.iloc[0].values[2:] if item]
-    for ativ in atividades_listadas:
-        gabarito_match = df_gabarito[df_gabarito["ATIVIDADE"] == ativ]
-        gabarito = gabarito_match["GABARITO"].values[0] if not gabarito_match.empty else "?"
-        st.markdown(f"🔹 **{ativ}** — Gabarito: `{gabarito}`")
-
-    if respostas_codigo.empty:
-        st.info("⚠️ Nenhuma resposta foi enviada ainda para este código.")
+    # Respostas
+    if respostas_do_codigo.empty:
+        st.info("Nenhuma resposta foi enviada ainda para este código.")
         st.stop()
 
-    st.markdown("### 👩‍🎓 Alunos que realizaram a atividade:")
+    st.subheader("📋 Respostas dos Alunos:")
+    for idx, row in respostas_do_codigo.iterrows():
+        nome = row["NOME"]
+        escola = row["ESCOLA"]
+        turma = row["TURMA"]
 
-    for _, aluno in respostas_codigo.iterrows():
-        nome = aluno["NOME"]
-        escola = aluno["ESCOLA"]
-        turma = aluno["TURMA"]
         st.markdown(f"#### 👤 {nome} — {escola} ({turma})")
+        respostas_html = ""
 
-        respostas_html = "<ul>"
         acertos = 0
-        total = 0
+        for i in range(5, len(row), 2):
+            atividade = row[i]
+            resposta = row[i + 1] if i + 1 < len(row) else "?"
 
-        for i in range(5, len(aluno), 2):
-            atividade = aluno[i]
-            resposta = aluno[i + 1] if i + 1 < len(aluno) else "?"
-            if not atividade:
+            if pd.isna(atividade):
                 continue
 
             gabarito_row = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
             gabarito = gabarito_row["GABARITO"].values[0] if not gabarito_row.empty else "?"
 
-            correto = resposta.upper() == gabarito
-            icone = "✅" if correto else "❌"
-            if correto:
+            status = "✅" if resposta.upper() == gabarito else "❌"
+            if status == "✅":
                 acertos += 1
-            total += 1
 
-            respostas_html += f"<li>{icone} <strong>{atividade}</strong>: Resposta = {resposta}, Gabarito = {gabarito}</li>"
+            respostas_html += f"<li>{atividade}: Resposta: <strong>{resposta}</strong> {status}</li>"
 
-        respostas_html += "</ul>"
-        st.markdown(f"Acertos: **{acertos}/{total}**", unsafe_allow_html=True)
-        st.markdown(respostas_html, unsafe_allow_html=True)
-        st.markdown("---")
+        st.markdown(f"<ul>{respostas_html}</ul>", unsafe_allow_html=True)
+        st.info(f"🟢 Total de acertos: **{acertos}/{len(atividades_escolhidas)}**")
