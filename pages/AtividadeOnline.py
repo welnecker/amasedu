@@ -136,12 +136,22 @@ if "codigo_confirmado" in st.session_state:
         else:
             resposta = st.session_state.respostas.get(atividade)
             icone = "✅" if resposta == gabarito else "❌"
-            st.radio(
-                f"{icone} Você marcou:", ["A", "B", "C", "D", "E"],
-                index=["A", "B", "C", "D", "E"].index(resposta),
-                key=f"resposta_{idx}",
-                disabled=True
-            )
+            opcoes = ["A", "B", "C", "D", "E"]
+if resposta in opcoes:
+    st.radio(
+        f"{icone} Você marcou:", opcoes,
+        index=opcoes.index(resposta),
+        key=f"resposta_{idx}",
+        disabled=True
+    )
+else:
+    st.radio(
+        f"{icone} Você marcou:", opcoes,
+        index=0,  # fallback para A
+        key=f"resposta_{idx}",
+        disabled=True
+    )
+
 
     if st.session_state.acertos is None and st.button("📤 Enviar respostas"):
         if any(r is None for r in st.session_state.respostas.values()):
