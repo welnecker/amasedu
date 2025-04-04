@@ -47,21 +47,149 @@ def carregar_atividades():
         st.error(f"Erro ao carregar atividades: {e}")
         return pd.DataFrame()
 
-# Inicializa controle de respostas enviadas
-if "respostas_enviadas" not in st.session_state:
-    st.session_state.respostas_enviadas = set()
+@st.cache_data(show_spinner=False)
+def carregar_gabarito():
+    try:
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
+        )
+        service = build("sheets", "v4", credentials=creds)
+        result = service.spreadsheets().values().get(
+            spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+            range="MATEMATICA!A1:N"
+        ).execute()
+        values = result.get("values", [])
+        if not values or len(values) < 2:
+            return pd.DataFrame(columns=["ATIVIDADE", "GABARITO"])
+        header = [col.strip().upper() for col in values[0]]
+        rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
+        df = pd.DataFrame(rows, columns=header)
+        df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
+        df["GABARITO"] = df["GABARITO"].astype(str).str.strip().str.upper()
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar gabarito: {e}")
+        return pd.DataFrame()
+
+if "ids_realizados" not in st.session_state:
+    st.session_state.ids_realizados = set()
 
 dados = carregar_atividades()
 
-# Botão de geração de atividade
-if st.button("📥 Gerar Atividade"):
+if st.button("📥 Gerar Atividade") and "atividades_utilizadas" not in st.session_state:
     if not all([nome_aluno.strip(), escola.strip(), turma.strip(), codigo_atividade.strip()]):
         st.warning("⚠️ Por favor, preencha todos os campos.")
         st.stop()
     id_unico = gerar_id_unico(nome_aluno, escola, turma, codigo_atividade)
-    if id_unico in st.session_state.respostas_enviadas:
-        st.error("❌ Você já fez a atividade com esse código.")
+    if id_unico in st.session_state.ids_realizados:
+        st.warning("❌ Você já respondeu essa atividade.")
         st.stop()
     st.session_state.codigo_confirmado = codigo_atividade.strip().upper()
     st.session_state.id_unico_atual = id_unico
+    st.rerun()
+
+if "codigo_confirmado" in st.session_state:
+    codigo_atividade = st.session_state.codigo_confirmado
+    id_unico = st.session_state.id_unico_atual
+    linha = dados[dados["CODIGO"] == codigo_atividade]
+    if linha.empty:
+        st.warning("Código inválido ou sem questões.")
+        st.stop()
+
+    atividades = [linha[col].values[0] for col in linha.columns if col.startswith("ATIVIDADE") and linha[col].values[0]]
+
+    if "atividades_utilizadas" not in st.session_state:
+        st.session_state.atividades_utilizadas = atividades
+
+    gabarito_df = carregar_gabarito()
+    opcoes = ["A", "B", "C", "D", "E"]
+
+    if "respostas_salvas" not in st.session_state:
+        st.subheader("Responda cada questão marcando uma alternativa:")
+        respostas = {}
+        for idx, atividade in enumerate(atividades):
+            url = f"https://questoesama.pages.dev/{atividade}.jpg"
+            st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
+            resposta = st.radio("", opcoes, key=f"resp_{idx}", index=None)
+            respostas[atividade] = resposta
+
+        if st.button("📤 Enviar respostas"):
+            if any(r is None for r in respostas.values()):
+                st.warning("⚠️ Há questões não respondidas.")
+                st.stop()
+
+            try:
+                acertos = 0
+                for atividade, resposta in respostas.items():
+                    linha_gabarito = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
+                    if not linha_gabarito.empty and linha_gabarito["GABARITO"].values[0] == resposta.upper():
+                        acertos += 1
+
+                creds = Credentials.from_service_account_info(
+                    st.secrets["gcp_service_account"],
+                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                )
+                service = build("sheets", "v4", credentials=creds)
+                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                linha_envio = [timestamp, codigo_atividade, nome_aluno, escola, turma]
+                for atividade, resposta in respostas.items():
+                    linha_envio.extend([atividade, resposta])
+                service.spreadsheets().values().append(
+                    spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                    range="ATIVIDADES!A1",
+                    valueInputOption="USER_ENTERED",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": [linha_envio]}
+                ).execute()
+                st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(respostas)}.")
+                st.session_state.ids_realizados.add(id_unico)
+                st.session_state.respostas_salvas = respostas
+                st.session_state.resultado_final = acertos
+
+            except Exception as e:
+                st.error(f"Erro ao enviar respostas: {e}")
+
+    elif "respostas_salvas" in st.session_state:
+        respostas = st.session_state.respostas_salvas
+        acertos = 0
+        for idx, atividade in enumerate(st.session_state.atividades_utilizadas):
+            resposta = respostas.get(atividade, "")
+            linha_gabarito = gabarito_df[gabarito_df["ATIVIDADE"] == atividade]
+            correta = linha_gabarito["GABARITO"].values[0] if not linha_gabarito.empty else ""
+
+            acertou = resposta.upper() == correta.upper()
+            icone = "✅" if acertou else "❌"
+            if acertou:
+                acertos += 1
+
+            st.image(f"https://questoesama.pages.dev/{atividade}.jpg", caption=f"Atividade {idx + 1}", use_container_width=True)
+            st.radio(
+                f"{icone} Você marcou:",
+                options=opcoes,
+                index=opcoes.index(resposta.upper()) if resposta.upper() in opcoes else 0,
+                key=f"resposta_{idx}_verificada",
+                disabled=True
+            )
+
+        st.success(f"✅ Respostas já enviadas. Você acertou: {acertos}/{len(st.session_state.atividades_utilizadas)}")
+
+        st.markdown("---")
+        if st.button("🧹 Limpar Atividade"):
+            if "atividades_mostradas" in st.session_state:
+                del st.session_state["atividades_mostradas"]
+            if "codigo_confirmado" in st.session_state:
+                del st.session_state["codigo_confirmado"]
+            if "show_result" in st.session_state:
+                del st.session_state["show_result"]
+            if "resultado_final" in st.session_state:
+                del st.session_state["resultado_final"]
+            st.rerun()
+
+# Botão para limpar a atividade atual (sem permitir refazer)
+if st.session_state.get("atividade_finalizada") and st.button("🧹 Limpar Atividade"):
+    st.session_state.pop("codigo_confirmado", None)
+    st.session_state.pop("respostas", None)
+    st.session_state.pop("resultado_final", None)
+    st.session_state.pop("atividade_finalizada", None)
     st.rerun()
