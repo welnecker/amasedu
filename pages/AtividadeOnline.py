@@ -173,3 +173,11 @@ if "codigo_confirmado" in st.session_state:
             )
 
         st.success(f"✅ Respostas já enviadas. Você acertou: {acertos}/{len(st.session_state.atividades_utilizadas)}")
+
+# Botão para limpar a atividade atual (sem permitir refazer)
+if st.session_state.get("atividade_finalizada") and st.button("🧹 Limpar Atividade"):
+    st.session_state.pop("codigo_confirmado", None)
+    st.session_state.pop("respostas", None)
+    st.session_state.pop("resultado_final", None)
+    st.session_state.pop("atividade_finalizada", None)
+    st.rerun()
