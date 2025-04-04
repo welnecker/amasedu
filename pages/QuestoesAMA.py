@@ -154,23 +154,20 @@ if descritor != "Escolha...":
             st.markdown(f"#### {nivel_titulo}")
             resultados = dados.query(
                 'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
-            )[["ATIVIDADE"]].head(10)
+            )["ATIVIDADE"].head(10)
 
             if resultados.empty:
                 st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
                 continue
 
             if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
-                for idx, row in resultados.iterrows():
-                    nome_atividade = row["ATIVIDADE"]
-                    if nome_atividade not in st.session_state.atividades_exibidas:
-                        if len(st.session_state.atividades_exibidas) < 10:
-                            st.session_state.atividades_exibidas.append(nome_atividade)
+                for nome_atividade in resultados:
+                    if nome_atividade not in st.session_state.atividades_exibidas and len(st.session_state.atividades_exibidas) < 10:
+                        st.session_state.atividades_exibidas.append(nome_atividade)
                 st.rerun()
 
-            for idx, row in resultados.iterrows():
+            for idx, nome_atividade in enumerate(resultados):
                 checkbox_key = f"chk_{nivel_nome}_{idx}"
-                nome_atividade = row["ATIVIDADE"]
                 checked = nome_atividade in st.session_state.atividades_exibidas
                 disabled = not checked and len(st.session_state.atividades_exibidas) >= 10
 
@@ -197,7 +194,7 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
         if st.button("PREENCHER CABEÇALHO"):
-            st.switch_page("AtividadeAMA.py")
+            st.switch_page("pages/AtividadeAMA.py")
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
