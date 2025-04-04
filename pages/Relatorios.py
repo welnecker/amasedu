@@ -82,7 +82,7 @@ if codigo:
         st.markdown(f"{i}. **{nome}** - Gabarito: **{letra}**")
 
     # Filtrar respostas enviadas
-    if "CÓDIGO" not in df_respostas.columns:
+    if "CODIGO" not in df_respostas.columns:
         st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
         st.stop()
 
