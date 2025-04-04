@@ -87,11 +87,11 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     st.markdown("### Escolha a SRE, Escola e Turma:")
     col_sre, col_escola, col_turma = st.columns(3)
 
-    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
-    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
-    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
-    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
-    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
+    sre = col_sre.selectbox("**SRE**", ["Escolha..."] + sorted(base_seges["SRE"].dropna().unique()), key="sre")
+    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique() if sre != "Escolha..." else []
+    escola = col_escola.selectbox("**ESCOLA**", ["Escolha..."] + sorted(escolas), key="escola")
+    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique() if escola != "Escolha..." else []
+    turma = col_turma.selectbox("**TURMA**", ["Escolha..."] + sorted(turmas), key="turma")
 
     st.session_state.selecionado_sre = sre
     st.session_state.selecionado_escola = escola
@@ -163,27 +163,21 @@ if descritor != "Escolha...":
             if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
                 for idx, row in resultados.iterrows():
                     nome_atividade = row["ATIVIDADE"]
-                    if len(st.session_state.atividades_exibidas) >= 10:
-                        break
-                    checkbox_key = f"chk_{idx}"
-                    st.session_state[checkbox_key] = True
                     if nome_atividade not in st.session_state.atividades_exibidas:
-                        st.session_state.atividades_exibidas.append(nome_atividade)
+                        if len(st.session_state.atividades_exibidas) < 10:
+                            st.session_state.atividades_exibidas.append(nome_atividade)
                 st.rerun()
 
             for idx, row in resultados.iterrows():
-                checkbox_key = f"chk_{idx}"
+                checkbox_key = f"chk_{nivel_nome}_{idx}"
                 nome_atividade = row["ATIVIDADE"]
-                if checkbox_key not in st.session_state:
-                    st.session_state[checkbox_key] = False
-                disabled = (
-                    not st.session_state[checkbox_key] and len(st.session_state.atividades_exibidas) >= 10
-                )
-                checked = st.checkbox(nome_atividade, key=checkbox_key, disabled=disabled)
+                checked = nome_atividade in st.session_state.atividades_exibidas
+                disabled = not checked and len(st.session_state.atividades_exibidas) >= 10
 
-                if checked and nome_atividade not in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.append(nome_atividade)
-                elif not checked and nome_atividade in st.session_state.atividades_exibidas:
+                if st.checkbox(nome_atividade, key=checkbox_key, value=checked, disabled=disabled):
+                    if nome_atividade not in st.session_state.atividades_exibidas and len(st.session_state.atividades_exibidas) < 10:
+                        st.session_state.atividades_exibidas.append(nome_atividade)
+                elif nome_atividade in st.session_state.atividades_exibidas:
                     st.session_state.atividades_exibidas.remove(nome_atividade)
 
     total = len(st.session_state.atividades_exibidas)
@@ -203,10 +197,9 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
         if st.button("PREENCHER CABEÇALHO"):
-            st.switch_page("pages/AtividadeAMA.py")
+            st.switch_page("AtividadeAMA.py")
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
-#
