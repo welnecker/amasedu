@@ -55,7 +55,7 @@ if codigo_input:
     st.markdown(f"### 🧾 Detalhes do código: `{codigo_input}`")
 
     df_geradas = carregar_planilha("ATIVIDADES_GERADAS!A1:Z")
-    df_respostas = carregar_planilha("ATIVIDADES!A1:Z1000")
+    df_respostas = carregar_planilha("ATIVIDADES!B1:Z1000")
     gabarito_df = carregar_planilha("MATEMATICA!A1:N")
 
     atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo_input]
