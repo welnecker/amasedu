@@ -37,9 +37,21 @@ def carregar_dados(sheet_range, has_header=True):
     if has_header:
         header = [col.strip().upper() for col in values[0]]
         data = values[1:]
-        return pd.DataFrame(data, columns=header)
+
+        # Normalizar linhas com número incorreto de colunas
+        col_count = len(header)
+        data_corrigida = []
+        for linha in data:
+            if len(linha) < col_count:
+                linha += [""] * (col_count - len(linha))  # completa com vazio
+            elif len(linha) > col_count:
+                linha = linha[:col_count]  # corta excesso
+            data_corrigida.append(linha)
+
+        return pd.DataFrame(data_corrigida, columns=header)
     else:
         return pd.DataFrame(values)
+
 
 # --- Interface ---
 st.title("📊 Relatórios de Atividades - AMA 2025")
