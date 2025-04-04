@@ -121,6 +121,9 @@ for i, nome in enumerate(st.session_state.atividades_exibidas):
 # ==========================================================
 # 🚀 GERAÇÃO DE PDF E SALVAMENTO
 # ==========================================================
+# ==========================================================
+# 🚀 GERAÇÃO DE PDF E SALVAMENTO
+# ==========================================================
 col_gerar, col_cancelar = st.columns([1, 1])
 
 with col_gerar:
@@ -133,9 +136,8 @@ with col_gerar:
             try:
                 atividades = st.session_state.atividades_exibidas
                 codigo_atividade = gerar_codigo_aleatorio()
+                st.session_state.codigo_atividade = codigo_atividade  # Armazena para exibição
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-                # Geração da linha única com código, timestamp e atividades
                 linha_unica = [codigo_atividade, timestamp] + atividades
 
                 creds = Credentials.from_service_account_info(
@@ -152,9 +154,6 @@ with col_gerar:
                     body={"values": [linha_unica]}
                 ).execute()
 
-                # Limpa o cache depois de atualizar os dados
-                st.cache_data.clear()
-
                 # Log de cabeçalho
                 dados_log = {
                     "Escola": escola,
@@ -170,7 +169,7 @@ with col_gerar:
                     dados_log
                 )
 
-                # Gerar PDF
+                # Geração do PDF
                 url_api = "https://amasedu.onrender.com/gerar-pdf"
                 payload = {
                     "escola": escola,
@@ -181,24 +180,29 @@ with col_gerar:
                 response = requests.post(url_api, json=payload)
 
                 if response.status_code == 200:
-                    st.download_button(
-                        label="📥 Baixar PDF",
-                        data=response.content,
-                        file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
-                        mime="application/pdf"
-                    )
-                    st.success("✅ PDF gerado com sucesso!")
-                    st.markdown("### 🧾 Código da atividade para os alunos:")
-                    st.code(codigo_atividade, language="markdown")
+                    st.session_state.pdf_bytes = response.content
                 else:
                     st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
+
+                st.cache_data.clear()
 
             except Exception as e:
                 st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
 
-
+# Mostrar o código e botão de download se PDF já foi gerado
+if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
+    st.success("✅ PDF gerado com sucesso!")
+    st.markdown("### 🧾 Código da atividade para os alunos:")
+    st.code(st.session_state.codigo_atividade, language="markdown")
+    st.download_button(
+        label="📥 Baixar PDF",
+        data=st.session_state.pdf_bytes,
+        file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
+        mime="application/pdf"
+    )
 
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
         st.session_state.clear()
         st.switch_page("QuestoesAMA.py")
+
