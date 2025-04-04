@@ -62,6 +62,7 @@ st.markdown(
 )
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
+st.title("ATIVIDADE AMA 2025")
 
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
@@ -98,4 +99,113 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
 else:
     st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
 
-# Continuação da página original abaixo... (incluindo carregamento de atividades, exibição, seleção, geração de PDF, etc.)
+# --- CARREGAMENTO DE DADOS PARA QUESTÕES ---
+URL_PLANILHA_QUESTOES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+
+@st.cache_data(show_spinner=False)
+def carregar_dados():
+    try:
+        response = requests.get(URL_PLANILHA_QUESTOES, timeout=10)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text))
+        df.columns = df.columns.str.strip()
+        for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
+        return df
+    except Exception:
+        return None
+
+dados = carregar_dados()
+if dados is None:
+    st.error("❌ Erro ao carregar os dados da planilha de questões.")
+    if st.button("🔄 Tentar novamente"):
+        st.rerun()
+    st.stop()
+
+if "atividades_exibidas" not in st.session_state:
+    st.session_state.atividades_exibidas = []
+
+# --- FILTROS ANTIGOS ---
+st.markdown("### Escolha Série, Habilidade e Descritor.")
+col_serie, col_habilidade, col_descritor = st.columns(3)
+
+serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
+habilidade = col_habilidade.selectbox("**HABILIDADE**",
+    ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
+    key="habilidade"
+)
+descritor = col_descritor.selectbox("**DESCRITOR**",
+    ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
+    key="descritor"
+)
+
+# --- EXIBIÇÃO DE QUESTÕES ---
+if descritor != "Escolha...":
+    st.markdown("<hr />", unsafe_allow_html=True)
+    st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
+
+    total_selecionado = len(st.session_state.atividades_exibidas)
+    col_facil, col_medio, col_dificil = st.columns(3)
+    niveis_fixos = {'Facil': ('Fácil', col_facil), 'Medio': ('Médio', col_medio), 'Dificil': ('Difícil', col_dificil)}
+
+    for nivel_nome, (nivel_titulo, coluna) in niveis_fixos.items():
+        with coluna:
+            st.markdown(f"#### {nivel_titulo}")
+            resultados = dados.query(
+                'SERIE == @serie & HABILIDADE == @habilidade & DESCRITOR == @descritor & NIVEL == @nivel_nome'
+            )[["ATIVIDADE"]].head(10)
+
+            if resultados.empty:
+                st.info(f"Nenhuma atividade {nivel_titulo.lower()} encontrada.")
+                continue
+
+            if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
+                for idx, row in resultados.iterrows():
+                    nome_atividade = row["ATIVIDADE"]
+                    if len(st.session_state.atividades_exibidas) >= 10:
+                        break
+                    checkbox_key = f"chk_{idx}"
+                    st.session_state[checkbox_key] = True
+                    if nome_atividade not in st.session_state.atividades_exibidas:
+                        st.session_state.atividades_exibidas.append(nome_atividade)
+                st.rerun()
+
+            for idx, row in resultados.iterrows():
+                checkbox_key = f"chk_{idx}"
+                nome_atividade = row["ATIVIDADE"]
+                if checkbox_key not in st.session_state:
+                    st.session_state[checkbox_key] = False
+                disabled = (
+                    not st.session_state[checkbox_key] and len(st.session_state.atividades_exibidas) >= 10
+                )
+                checked = st.checkbox(nome_atividade, key=checkbox_key, disabled=disabled)
+
+                if checked and nome_atividade not in st.session_state.atividades_exibidas:
+                    st.session_state.atividades_exibidas.append(nome_atividade)
+                elif not checked and nome_atividade in st.session_state.atividades_exibidas:
+                    st.session_state.atividades_exibidas.remove(nome_atividade)
+
+    total = len(st.session_state.atividades_exibidas)
+    st.progress(total / 10 if total <= 10 else 1.0)
+    st.info(f"{total}/10 atividades escolhidas. Role a página para baixo.")
+
+    if total >= 10:
+        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
+
+    if st.session_state.atividades_exibidas:
+        st.markdown("<hr />", unsafe_allow_html=True)
+        st.success("Links das atividades selecionadas:")
+        col1, col2 = st.columns(2)
+        for count, nome in enumerate(st.session_state.atividades_exibidas):
+            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+            with col1 if count % 2 == 0 else col2:
+                st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
+
+        if st.button("PREENCHER CABEÇALHO"):
+            st.switch_page("pages/AtividadeAMA.py")
+
+if st.button("Recomeçar tudo"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
