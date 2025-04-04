@@ -54,7 +54,7 @@ def carregar_dados(sheet_range, has_header=True):
 
 
 # --- Interface ---
-st.title("📊 Relatórios de Atividades - AMA 2025")
+st.markdown("<h1 style='font-size:28px; white-space:nowrap;'>📊 Relatórios de Atividades - AMA 2025</h1>", unsafe_allow_html=True)
 st.markdown("Use o campo abaixo para buscar os dados de um código de atividade:")
 
 codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
