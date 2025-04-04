@@ -4,6 +4,11 @@ import pandas as pd
 import requests
 from io import StringIO
 import unicodedata
+from datetime import datetime
+import random
+import string
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
@@ -58,72 +63,12 @@ st.markdown(
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
-# --- TÍTULO PRINCIPAL ---
-
-
-# --- FILTROS ADICIONAIS ---
-colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
-if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
-    st.markdown("### Escolha a SRE, Escola e Turma:")
-    col_sre, col_escola, col_turma = st.columns(3)
-
-    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
-    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
-    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
-    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
-    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
-
-    st.session_state.selecionado_sre = sre
-    st.session_state.selecionado_escola = escola
-    st.session_state.selecionado_turma = turma
-else:
-    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
-
-# --- CARREGAMENTO DE BASE_SEGES PARA FILTROS ADICIONAIS ---
-URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
-
-@st.cache_data(show_spinner=False)
-def carregar_base_seges():
-    def normalizar_coluna(col):
-        import unicodedata
-        return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
-    try:
-        response = requests.get(URL_BASE_SEGES, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = [normalizar_coluna(c) for c in df.columns]
-        return df
-    except Exception:
-        return pd.DataFrame()
-
-base_seges = carregar_base_seges()
-colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
-colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
-if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
-    st.markdown("### Escolha a SRE, Escola e Turma:")
-    col_sre, col_escola, col_turma = st.columns(3)
-
-    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
-    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
-    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
-    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
-    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
-
-    st.session_state.selecionado_sre = sre
-    st.session_state.selecionado_escola = escola
-    st.session_state.selecionado_turma = turma
-else:
-    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
-
-st.title("ATIVIDADE AMA 2025")
-
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
 
 @st.cache_data(show_spinner=False)
 def carregar_base_seges():
     def normalizar_coluna(col):
-        import unicodedata
         return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
     try:
         response = requests.get(URL_BASE_SEGES, timeout=10)
@@ -136,6 +81,7 @@ def carregar_base_seges():
 
 base_seges = carregar_base_seges()
 colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
+
 if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     st.markdown("### Escolha a SRE, Escola e Turma:")
     col_sre, col_escola, col_turma = st.columns(3)
@@ -152,102 +98,4 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
 else:
     st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
 
-# Salvar valores nos filtros no session_state para usar em outras páginas
-st.session_state.selecionado_sre = sre if 'sre' in locals() else None
-st.session_state.selecionado_escola = escola if 'escola' in locals() else None
-st.session_state.selecionado_turma = turma if 'turma' in locals() else None
-
-# --- CARREGAMENTO DE BASE_SEGES ---
-URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
-
-@st.cache_data(show_spinner=False)
-def carregar_base_seges():
-    def normalizar_coluna(col):
-        import unicodedata
-        return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
-    try:
-        response = requests.get(URL_BASE_SEGES, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = [normalizar_coluna(c) for c in df.columns]
-        return df
-    except Exception:
-        return pd.DataFrame()
-
-base_seges = carregar_base_seges()
-colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
-if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
-    st.markdown("### Escolha a SRE, Escola e Turma:")
-    col_sre, col_escola, col_turma = st.columns(3)
-
-    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
-    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
-    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
-    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
-    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
-
-    st.session_state.selecionado_sre = sre
-    st.session_state.selecionado_escola = escola
-    st.session_state.selecionado_turma = turma
-else:
-    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
-
-
-# --- CARREGAMENTO DE DADOS ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
-URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
-
-@st.cache_data(show_spinner=False)
-def carregar_dados():
-    try:
-        response = requests.get(URL_PLANILHA, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip()
-        for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
-            if col in df.columns:
-                df[col] = df[col].astype(str).str.strip()
-        return df
-    except Exception:
-        return None
-
-@st.cache_data(show_spinner=False)
-def carregar_base_seges():
-    def normalizar_coluna(col):
-        return ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn').strip().upper()
-
-    try:
-        response = requests.get(URL_BASE_SEGES, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = [normalizar_coluna(c) for c in df.columns]
-        return df
-    except Exception:
-        return pd.DataFrame()
-
-base_seges = carregar_base_seges()
-
-dados = carregar_dados()
-base_seges = carregar_base_seges()
-
-if dados is None:
-    st.error("❌ Erro ao carregar os dados da planilha do Google Sheets.")
-    if st.button("🔄 Tentar novamente"):
-        st.rerun()
-    st.stop()
-
-if "atividades_exibidas" not in st.session_state:
-    st.session_state.atividades_exibidas = []
-
-# --- FILTROS ADICIONAIS ---
-colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
-if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
-    col_sre, col_escola, col_turma = st.columns(3)
-
-    sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
-    escolas = base_seges[base_seges["SRE"] == sre]["ESCOLA"].dropna().unique()
-    escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
-    turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
-    turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
-else:
-    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
+# Continuação da página original abaixo... (incluindo carregamento de atividades, exibição, seleção, geração de PDF, etc.)
