@@ -60,7 +60,7 @@ if codigo:
     df_gabarito = carregar_dados("MATEMATICA!A1:N")
 
     atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo]
-    respostas_do_codigo = df_respostas[df_respostas["CÓDIGO"].str.upper() == codigo]
+    respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
     if atividades_do_codigo.empty:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
