@@ -102,7 +102,8 @@ if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
 
 # --- FILTROS ADICIONAIS ---
-if not base_seges.empty:
+colunas_necessarias = {"SRE", "ESCOLA", "TURMA"}
+if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     col_sre, col_escola, col_turma = st.columns(3)
 
     sre = col_sre.selectbox("**SRE**", sorted(base_seges["SRE"].dropna().unique()), key="sre")
@@ -110,3 +111,5 @@ if not base_seges.empty:
     escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
     turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
     turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
+else:
+    st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
