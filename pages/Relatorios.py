@@ -86,7 +86,7 @@ if codigo:
         st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
         st.stop()
 
-    respostas_do_codigo = df_respostas[df_respostas["CÓDIGO"].str.upper() == codigo]
+    respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
