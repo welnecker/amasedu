@@ -174,6 +174,18 @@ if "codigo_confirmado" in st.session_state:
 
         st.success(f"✅ Respostas já enviadas. Você acertou: {acertos}/{len(st.session_state.atividades_utilizadas)}")
 
+        st.markdown("---")
+        if st.button("🧹 Limpar Atividade"):
+            if "atividades_mostradas" in st.session_state:
+                del st.session_state["atividades_mostradas"]
+            if "codigo_confirmado" in st.session_state:
+                del st.session_state["codigo_confirmado"]
+            if "show_result" in st.session_state:
+                del st.session_state["show_result"]
+            if "resultado_final" in st.session_state:
+                del st.session_state["resultado_final"]
+            st.rerun()
+
 # Botão para limpar a atividade atual (sem permitir refazer)
 if st.session_state.get("atividade_finalizada") and st.button("🧹 Limpar Atividade"):
     st.session_state.pop("codigo_confirmado", None)
