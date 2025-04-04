@@ -104,8 +104,14 @@ if "codigo_confirmado" in st.session_state:
         resposta = st.radio("", ["A", "B", "C", "D", "E"], key=f"resp_{idx}", index=None)
         respostas[atividade] = resposta
 
-        if st.button("📤 Enviar respostas") and "respostas_enviadas" not in st.session_state:
-         if any(r is None for r in respostas.values()):
+        respostas_enviadas = st.session_state.get("respostas_enviadas", False)
+
+    if st.button("📤 Enviar respostas", disabled=respostas_enviadas):
+     if respostas_enviadas:
+        st.warning("⛔ Você já respondeu essa atividade.")
+        st.stop()
+
+        if any(r is None for r in respostas.values()):
             st.warning("⚠️ Há questões não respondidas.")
             st.stop()
 
