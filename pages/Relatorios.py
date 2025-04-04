@@ -91,16 +91,31 @@ if codigo:
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
+                # Criar dicionário com os gabaritos escolhidos pelo professor
+        gabaritos_dict = {
+            atividade: df_gabarito[df_gabarito["ATIVIDADE"] == atividade]["GABARITO"].values[0]
+            for atividade in atividades_escolhidas
+        }
+
         st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
+
         for _, row in respostas_do_codigo.iterrows():
-            st.markdown(f"#### 👤 {row['NOME']} - {row['ESCOLA']} ({row['TURMA']})")
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                respostas_html = ""
-                for i in range(5, len(row), 2):
-                    atividade = row[i]
-                    resposta = row[i+1] if i+1 < len(row) else "?"
-                    gabarito_row = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
-                    gabarito = gabarito_row["GABARITO"].values[0] if not gabarito_row.empty else "?"
-                    respostas_html += f"<li><strong>{atividade}</strong>: Resposta: {resposta} | Gabarito: {gabarito}</li>"
-                st.markdown(f"<ul>{respostas_html}</ul>", unsafe_allow_html=True)
+            nome = row["NOME"]
+            escola = row["ESCOLA"]
+            turma = row["TURMA"]
+
+            st.markdown(f"<b>{nome} - {escola} ({turma})</b>", unsafe_allow_html=True)
+
+            linha_resumo = ""
+            for i in range(5, len(row), 3):  # Q, R, S
+                q = row[i] if i < len(row) else ""
+                r = row[i+1] if i+1 < len(row) else ""
+                s = row[i+2] if i+2 < len(row) else ""
+
+                g = gabaritos_dict.get(q, "?")
+                correto = "✔️" if s == "Certo" else "❌"
+                linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
+
+            st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
+            st.markdown("---")
+
