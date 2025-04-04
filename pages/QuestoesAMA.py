@@ -59,7 +59,6 @@ st.markdown(
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 
 # --- TÍTULO PRINCIPAL ---
-# --- SALVAR VALORES DOS FILTROS PARA USO POSTERIOR ---
 st.session_state.selecionado_sre = sre if 'sre' in locals() else None
 st.session_state.selecionado_escola = escola if 'escola' in locals() else None
 st.session_state.selecionado_turma = turma if 'turma' in locals() else None
@@ -75,6 +74,11 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
     escola = col_escola.selectbox("**ESCOLA**", sorted(escolas), key="escola")
     turmas = base_seges[(base_seges["SRE"] == sre) & (base_seges["ESCOLA"] == escola)]["TURMA"].dropna().unique()
     turma = col_turma.selectbox("**TURMA**", sorted(turmas), key="turma")
+
+    # Salvar no session_state para uso posterior
+    st.session_state.selecionado_sre = sre
+    st.session_state.selecionado_escola = escola
+    st.session_state.selecionado_turma = turma
 else:
     st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
 
