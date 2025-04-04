@@ -34,17 +34,36 @@ def carregar_atividades():
             spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
             range="ATIVIDADES_GERADAS!A1:Z"
         ).execute()
+        
         values = result.get("values", [])
         if not values or len(values) < 2:
             return pd.DataFrame(columns=["CODIGO"])
+        
         header = [col.strip().upper() for col in values[0]]
-        rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
+
+        # Corrigir cada linha: preencher faltantes ou cortar excedentes
+        rows = []
+        for row in values[1:]:
+            if len(row) < len(header):
+                row += [None] * (len(header) - len(row))
+            elif len(row) > len(header):
+                row = row[:len(header)]
+            rows.append(row)
+
         df = pd.DataFrame(rows, columns=header)
+
+        # Garantir que a coluna "CODIGO" exista antes de usá-la
+        if "CODIGO" not in df.columns:
+            st.error("❌ A coluna 'CODIGO' não foi encontrada na planilha. Verifique o cabeçalho.")
+            return pd.DataFrame(columns=["CODIGO"])
+
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
         return df
+
     except Exception as e:
         st.error(f"Erro ao carregar atividades: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(columns=["CODIGO"])
+
 
 @st.cache_data(show_spinner=False)
 def carregar_gabarito():
