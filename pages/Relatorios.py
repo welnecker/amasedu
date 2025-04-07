@@ -120,4 +120,4 @@ if codigo:
             st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
             st.markdown("---")
 else:
-    st.info("✏️ **Insira o código da atividade** para visualizar os dados.")
+    st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
