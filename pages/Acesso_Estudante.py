@@ -8,9 +8,16 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
 st.subheader("Preencha seus dados abaixo:")
-nome_aluno = st.text_input("Nome do Aluno:")
-escola = st.text_input("Escola:")
-turma = st.text_input("Turma:")
+nome_aluno = st.text_input("Nome do(a) Aluno(a):")
+
+# Recuperar escola e turma selecionadas na sessão
+escola = st.session_state.get("selecionado_escola", "")
+turma = st.session_state.get("selecionado_turma", "")
+
+# Exibir escola e turma como campos desabilitados
+st.text_input("Escola:", value=escola, disabled=True)
+st.text_input("Turma:", value=turma, disabled=True)
+
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
