@@ -1,127 +1,147 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
+import unicodedata
+import requests
+import random
+import string
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-st.set_page_config(page_title="Relatórios AMA 2025", page_icon="📊")
+st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-# --- Autenticação por senha ---
-if "relatorio_autenticado" not in st.session_state:
-    st.session_state.relatorio_autenticado = False
+# ==========================================================
+# 📟 FORMULÁRIO DE CABEÇALHO
+# ==========================================================
+st.subheader("Preencha o cabeçalho da atividade:")
 
-if not st.session_state.relatorio_autenticado:
-    st.markdown("### 🔐 Acesso restrito aos professores")
-    senha = st.text_input("Digite a senha para acessar os relatórios:", type="password")
-    if senha == "sedu":
-        st.session_state.relatorio_autenticado = True
-        st.success("✅ Acesso autorizado!")
-        st.rerun()
-    elif senha:
-        st.error("❌ Senha incorreta.")
+escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
+data = st.date_input("Data:", value=datetime.today())
+professor = st.text_input("Nome do Professor(a):")
+serie = st.session_state.get("serie", "")
+habilidade = st.session_state.get("habilidade", "")
+descritor = st.session_state.get("descritor", "")
+sre = st.session_state.get("selecionado_sre", "")
+turma = st.session_state.get("selecionado_turma", "")
+
+if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
+    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
 
-# --- Função para carregar dados do Google Sheets ---
-@st.cache_data(show_spinner=False)
-def carregar_dados(sheet_range, has_header=True):
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"])
+# ==========================================================
+# 📋 LISTA DAS ATIVIDADES ESCOLHIDAS
+# ==========================================================
+st.success("Atividades selecionadas:")
+col1, col2 = st.columns(2)
+for i, nome in enumerate(st.session_state.atividades_exibidas):
+    with col1 if i % 2 == 0 else col2:
+        st.markdown(f"- **Atividade:** {nome}")
+
+# ==========================================================
+# 🚀 GERAÇÃO DE PDF E SALVAMENTO
+# ==========================================================
+def gerar_codigo_aleatorio(tamanho=6):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=tamanho))
+
+def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
+    creds = Credentials.from_service_account_info(secrets, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build("sheets", "v4", credentials=creds)
-    result = service.spreadsheets().values().get(
-        spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-        range=sheet_range
+
+    linha = [[
+        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        dados_log["Escola"],
+        dados_log["Professor"],
+        dados_log["Série"],
+        dados_log["Habilidades"],
+        dados_log["Descritor"],
+        dados_log["TotalQuestoes"]
+    ]]
+
+    service.spreadsheets().values().append(
+        spreadsheetId=spreadsheet_id,
+        range="LOG!A1",
+        valueInputOption="USER_ENTERED",
+        insertDataOption="INSERT_ROWS",
+        body={"values": linha}
     ).execute()
 
-    values = result.get("values", [])
-    if not values or len(values) < 1:
-        return pd.DataFrame()
+    st.cache_data.clear()
 
-    if has_header:
-        header = [col.strip().upper() for col in values[0]]
-        data = values[1:]
+col_gerar, col_cancelar = st.columns([1, 1])
 
-        col_count = len(header)
-        data_corrigida = []
-        for linha in data:
-            if len(linha) < col_count:
-                linha += [""] * (col_count - len(linha))
-            elif len(linha) > col_count:
-                linha = linha[:col_count]
-            data_corrigida.append(linha)
+with col_gerar:
+    if st.button("📄 GERAR ATIVIDADE"):
+        if not escola or not professor:
+            st.warning("Preencha todos os campos antes de gerar o PDF.")
+            st.stop()
 
-        return pd.DataFrame(data_corrigida, columns=header)
-    else:
-        return pd.DataFrame(values)
+        with st.spinner("Gerando PDF, salvando código e registrando log..."):
+            try:
+                atividades = st.session_state.atividades_exibidas
+                codigo_atividade = gerar_codigo_aleatorio()
+                st.session_state.codigo_atividade = codigo_atividade
+                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                linha_unica = [codigo_atividade, timestamp, sre, escola, turma] + atividades
 
-# --- Interface ---
-st.markdown("<h1 style='font-size:28px; white-space:nowrap;'>📊 Relatórios de Atividades - AMA 2025</h1>", unsafe_allow_html=True)
-st.markdown("Use o campo abaixo para buscar os dados de um código de atividade:")
+                creds = Credentials.from_service_account_info(
+                    st.secrets["gcp_service_account"],
+                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                )
+                service = build("sheets", "v4", credentials=creds)
 
-codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
+                service.spreadsheets().values().append(
+                    spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                    range="ATIVIDADES_GERADAS!A1",
+                    valueInputOption="USER_ENTERED",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": [linha_unica]}
+                ).execute()
 
-if codigo:
-    st.markdown("---")
-    st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
+                dados_log = {
+                    "Escola": escola,
+                    "Professor": professor,
+                    "Série": serie,
+                    "Habilidades": habilidade,
+                    "Descritor": descritor,
+                    "TotalQuestoes": len(atividades)
+                }
+                registrar_log_google_sheets(
+                    st.secrets["gcp_service_account"],
+                    "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                    dados_log
+                )
 
-    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
-    df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
-    df_gabarito = carregar_dados("MATEMATICA!A1:M", has_header=True)
+                url_api = "https://amasedu.onrender.com/gerar-pdf"
+                payload = {
+                    "escola": escola,
+                    "professor": professor,
+                    "data": data.strftime("%Y-%m-%d"),
+                    "atividades": atividades
+                }
+                response = requests.post(url_api, json=payload)
 
-    atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo]
-    if atividades_do_codigo.empty:
-        st.warning("❗ Código não encontrado na base de atividades geradas.")
-        st.stop()
+                if response.status_code == 200:
+                    st.session_state.pdf_bytes = response.content
+                else:
+                    st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
 
-    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE")]
-    atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
-    atividades_escolhidas = [a for a in atividades_escolhidas if a]
+                st.cache_data.clear()
 
-    if "CODIGO" not in df_respostas.columns:
-        st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
-        st.stop()
+            except Exception as e:
+                st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
 
-    respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
+if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
+    st.success("✅ PDF gerado com sucesso!")
+    st.markdown("### 📟 Código da atividade para os alunos:")
+    st.code(st.session_state.codigo_atividade, language="markdown")
+    st.download_button(
+        label="📅 Baixar PDF",
+        data=st.session_state.pdf_bytes,
+        file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
+        mime="application/pdf"
+    )
 
-    if respostas_do_codigo.empty:
-        st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
-    else:
-        gabaritos_dict = {}
-        for atividade in atividades_escolhidas:
-            linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
-            if not linha.empty:
-                gabaritos_dict[atividade] = linha.iloc[0]["GABARITO"]
-            else:
-                gabaritos_dict[atividade] = "?"
-
-        st.markdown("### ✅ Atividades Escolhidas pelo Professor:")
-        col1, col2 = st.columns(2)
-        for i, nome in enumerate(atividades_escolhidas):
-            gabarito = gabaritos_dict.get(nome, "?")
-            col = col1 if i % 2 == 0 else col2
-            col.markdown(f"**{i+1}. {nome}** - Gabarito: **{gabarito}**")
-
-        st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
-        grupos = respostas_do_codigo.groupby(["ESCOLA", "TURMA"])
-        for (escola, turma), grupo in grupos:
-            st.markdown(f"**🏫 {escola}** - **Turma: {turma}**")
-            for _, row in grupo.iterrows():
-                nome = row["NOME"]
-                acertos = 0
-                total = 0
-                linha_resumo = ""
-                for i in range(5, len(row), 3):
-                    q = row[i] if i < len(row) else ""
-                    r = row[i+1] if i+1 < len(row) else ""
-                    s = row[i+2] if i+2 < len(row) else ""
-
-                    if q in gabaritos_dict:
-                        g = gabaritos_dict[q]
-                        total += 1
-                        correto = "✔️" if r.upper() == g.upper() else "❌"
-                        if r.upper() == g.upper():
-                            acertos += 1
-                        linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
-
-                st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
-            st.markdown("---")
-else:
-    st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
+with col_cancelar:
+    if st.button("❌ CANCELAR E RECOMEÇAR"):
+        st.session_state.clear()
+        st.switch_page("pages/Acesso_Professores.py")

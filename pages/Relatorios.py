@@ -112,13 +112,13 @@ if codigo:
                     r = row[i+1] if i+1 < len(row) else ""
                     s = row[i+2] if i+2 < len(row) else ""
 
+                    g = gabaritos_dict.get(q, "?")
+                    correto = "✔️" if s == "Certo" else "❌"
                     if q in gabaritos_dict:
-                        g = gabaritos_dict[q]
                         total += 1
-                        correto = "✔️" if r.upper() == g.upper() else "❌"
-                        if r.upper() == g.upper():
-                            acertos += 1
-                        linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
+                    if s == "Certo":
+                        acertos += 1
+                    linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
 
                 st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
                 st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
