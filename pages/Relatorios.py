@@ -107,7 +107,7 @@ if codigo:
             acertos = 0
             total = 0
             linha_resumo = ""
-            for i in range(5, len(row), 3):  # Q, R, S
+            for i in range(5, len(row), 3):  # Q1, R1, S1 ... a partir da coluna 5 (índice 5)
                 q = row[i] if i < len(row) else ""
                 r = row[i+1] if i+1 < len(row) else ""
                 s = row[i+2] if i+2 < len(row) else ""
