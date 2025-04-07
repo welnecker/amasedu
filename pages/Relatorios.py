@@ -61,7 +61,7 @@ if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
+    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:O", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
     df_gabarito = carregar_dados("MATEMATICA!A1:M", has_header=True)
 
@@ -70,7 +70,7 @@ if codigo:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE") or col in ["M", "N", "O"] or col.upper().startswith("ATIVIDADE_")]
+    atividade_cols = [f"ATIVIDADE_{i}" for i in range(1, 11)]
     atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
     atividades_escolhidas = [a for a in atividades_escolhidas if a]
 
@@ -113,10 +113,10 @@ if codigo:
                     s = row[i+2] if i+2 < len(row) else ""
 
                     g = gabaritos_dict.get(q, "?")
-                    correto = "✔️" if r.upper() == g.upper() else "❌"
+                    correto = "✔️" if s == "Certo" else "❌"
                     if q in gabaritos_dict:
                         total += 1
-                    if r.upper() == g.upper():
+                    if s == "Certo":
                         acertos += 1
                     linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
 
