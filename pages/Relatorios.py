@@ -63,7 +63,7 @@ if codigo:
 
     df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
-    df_gabarito = carregar_dados("MATEMATICA!A1:N", has_header=True)
+    df_gabarito = carregar_dados("MATEMATICA!A1:M", has_header=True)
 
     atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo]
     if atividades_do_codigo.empty:
@@ -81,12 +81,11 @@ if codigo:
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
-        # Lógica segura para extrair gabaritos
         gabaritos_dict = {}
         for atividade in atividades_escolhidas:
             linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
-            if not linha.empty and "GABARITO" in linha.columns:
-                gabaritos_dict[atividade] = linha["GABARITO"].values[0]
+            if not linha.empty:
+                gabaritos_dict[atividade] = linha.iloc[0]["GABARITO"]
             else:
                 gabaritos_dict[atividade] = "?"
 
@@ -122,6 +121,5 @@ if codigo:
             st.markdown(f"<b>{nome} - {escola} ({turma})</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
             st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
             st.markdown("---")
-
 else:
     st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
