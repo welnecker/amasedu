@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -38,19 +39,23 @@ def carregar_dados(sheet_range, has_header=True):
         header = [col.strip().upper() for col in values[0]]
         data = values[1:]
 
-        # Normalizar linhas com número incorreto de colunas
         col_count = len(header)
         data_corrigida = []
         for linha in data:
             if len(linha) < col_count:
-                linha += [""] * (col_count - len(linha))  # completa com vazio
+                linha += [""] * (col_count - len(linha))
             elif len(linha) > col_count:
-                linha = linha[:col_count]  # corta excesso
+                linha = linha[:col_count]
             data_corrigida.append(linha)
 
         return pd.DataFrame(data_corrigida, columns=header)
     else:
         return pd.DataFrame(values)
+
+def normalizar_texto(txt):
+    txt = str(txt).strip().upper()
+    txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
+    return txt
 
 # --- Interface ---
 st.markdown("<h1 style='font-size:28px; white-space:nowrap;'>📊 Relatórios de Atividades - AMA 2025</h1>", unsafe_allow_html=True)
@@ -60,7 +65,7 @@ codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
 
 if codigo:
     st.markdown("---")
-    st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
+    st.markdown(f"### 📜 Detalhes do código: `{codigo}`")
 
     df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
@@ -80,12 +85,14 @@ if codigo:
     respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
     if respostas_do_codigo.empty:
-        st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
+        st.info("📬 Nenhuma resposta foi enviada ainda para este código.")
     else:
-        gabaritos_dict = {
-            atividade: df_gabarito[df_gabarito["ATIVIDADE"] == atividade]["GABARITO"].values[0]
-            for atividade in atividades_escolhidas
-        }
+        df_gabarito["ATIVIDADE_N"] = df_gabarito["ATIVIDADE"].apply(normalizar_texto)
+        gabaritos_dict = {}
+        for atividade in atividades_escolhidas:
+            atv_norm = normalizar_texto(atividade)
+            linha = df_gabarito[df_gabarito["ATIVIDADE_N"] == atv_norm]
+            gabaritos_dict[atividade] = linha["GABARITO"].values[0] if not linha.empty else "?"
 
         st.markdown("### ✅ Atividades Escolhidas pelo Professor:")
         col1, col2 = st.columns(2)
@@ -103,7 +110,7 @@ if codigo:
             acertos = 0
             total = 0
             linha_resumo = ""
-            for i in range(5, len(row), 3):  # Q, R, S
+            for i in range(5, len(row), 3):
                 q = row[i] if i < len(row) else ""
                 r = row[i+1] if i+1 < len(row) else ""
                 s = row[i+2] if i+2 < len(row) else ""
