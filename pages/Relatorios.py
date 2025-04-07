@@ -1,4 +1,4 @@
-import streamlit as st
+""import streamlit as st
 import pandas as pd
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
@@ -61,7 +61,7 @@ if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:O", has_header=True)
+    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
     df_gabarito = carregar_dados("MATEMATICA!A1:M", has_header=True)
 
@@ -70,7 +70,7 @@ if codigo:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividade_cols = [f"ATIVIDADE_{i}" for i in range(1, 11)]
+    atividade_cols = [f"ATIVIDADE_{i}" for i in range(1, 11) if f"ATIVIDADE_{i}" in df_geradas.columns]
     atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
     atividades_escolhidas = [a for a in atividades_escolhidas if a]
 
@@ -107,7 +107,7 @@ if codigo:
                 acertos = 0
                 total = 0
                 linha_resumo = ""
-                for i in range(5, len(row), 3):
+                for i in range(6, len(row), 3):  # começa da coluna Q1 (índice 5) +1
                     q = row[i] if i < len(row) else ""
                     r = row[i+1] if i+1 < len(row) else ""
                     s = row[i+2] if i+2 < len(row) else ""
