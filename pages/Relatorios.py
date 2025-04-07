@@ -70,7 +70,9 @@ if codigo:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividades_escolhidas = [a for a in atividades_do_codigo.values[0][2:] if a]
+    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE")]
+    atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
+    atividades_escolhidas = [a for a in atividades_escolhidas if a]
 
     if "CODIGO" not in df_respostas.columns:
         st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
@@ -81,9 +83,6 @@ if codigo:
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
-        df_gabarito["ATIVIDADE"] = df_gabarito["ATIVIDADE"].astype(str).str.strip()
-        df_gabarito["GABARITO"] = df_gabarito["GABARITO"].astype(str).str.strip().str.upper()
-
         gabaritos_dict = {}
         for atividade in atividades_escolhidas:
             linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
