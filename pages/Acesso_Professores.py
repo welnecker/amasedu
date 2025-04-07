@@ -194,7 +194,7 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
         if st.button("PREENCHER CABEÇALHO"):
-            st.switch_page("pages/AtividadeAMA.py")
+            st.switch_page("AtividadeAMA.py")
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
