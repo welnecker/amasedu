@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -52,11 +51,6 @@ def carregar_dados(sheet_range, has_header=True):
     else:
         return pd.DataFrame(values)
 
-def normalizar_texto(txt):
-    txt = str(txt).strip().upper()
-    txt = ''.join(c for c in unicodedata.normalize('NFD', txt) if unicodedata.category(c) != 'Mn')
-    return txt
-
 # --- Interface ---
 st.markdown("<h1 style='font-size:28px; white-space:nowrap;'>📊 Relatórios de Atividades - AMA 2025</h1>", unsafe_allow_html=True)
 st.markdown("Use o campo abaixo para buscar os dados de um código de atividade:")
@@ -65,7 +59,7 @@ codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
 
 if codigo:
     st.markdown("---")
-    st.markdown(f"### 📜 Detalhes do código: `{codigo}`")
+    st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
     df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
@@ -85,14 +79,16 @@ if codigo:
     respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
     if respostas_do_codigo.empty:
-        st.info("📬 Nenhuma resposta foi enviada ainda para este código.")
+        st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
-        df_gabarito["ATIVIDADE_N"] = df_gabarito["ATIVIDADE"].apply(normalizar_texto)
+        # Lógica segura para extrair gabaritos
         gabaritos_dict = {}
         for atividade in atividades_escolhidas:
-            atv_norm = normalizar_texto(atividade)
-            linha = df_gabarito[df_gabarito["ATIVIDADE_N"] == atv_norm]
-            gabaritos_dict[atividade] = linha["GABARITO"].values[0] if not linha.empty else "?"
+            linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
+            if not linha.empty and "GABARITO" in linha.columns:
+                gabaritos_dict[atividade] = linha["GABARITO"].values[0]
+            else:
+                gabaritos_dict[atividade] = "?"
 
         st.markdown("### ✅ Atividades Escolhidas pelo Professor:")
         col1, col2 = st.columns(2)
@@ -110,7 +106,7 @@ if codigo:
             acertos = 0
             total = 0
             linha_resumo = ""
-            for i in range(5, len(row), 3):
+            for i in range(5, len(row), 3):  # Q, R, S
                 q = row[i] if i < len(row) else ""
                 r = row[i+1] if i+1 < len(row) else ""
                 s = row[i+2] if i+2 < len(row) else ""
@@ -126,5 +122,6 @@ if codigo:
             st.markdown(f"<b>{nome} - {escola} ({turma})</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
             st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
             st.markdown("---")
+
 else:
     st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
