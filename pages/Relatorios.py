@@ -114,10 +114,10 @@ if codigo:
 
                     g = gabaritos_dict.get(q, "?")
                     correto = "✔️" if s == "Certo" else "❌"
+                    if q in gabaritos_dict:
+                        total += 1
                     if s == "Certo":
                         acertos += 1
-                    if q:
-                        total += 1
                     linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
 
                 st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
