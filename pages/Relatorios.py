@@ -61,67 +61,41 @@ if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    df_geradas = carregar_dados("ATIVIDADES_GERADAS!A1:Z", has_header=True)
     df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
-    df_gabarito = carregar_dados("MATEMATICA!A1:M", has_header=True)
-
-    atividades_do_codigo = df_geradas[df_geradas["CODIGO"] == codigo]
-    if atividades_do_codigo.empty:
-        st.warning("❗ Código não encontrado na base de atividades geradas.")
-        st.stop()
-
-    atividade_cols = [f"ATIVIDADE_{i}" for i in range(1, 11) if f"ATIVIDADE_{i}" in df_geradas.columns]
-    atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
-    atividades_escolhidas = [a for a in atividades_escolhidas if a]
-
-    if "CODIGO" not in df_respostas.columns:
-        st.error("❌ A planilha de respostas está sem o cabeçalho correto.")
-        st.stop()
 
     respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
-    else:
-        gabaritos_dict = {}
-        for atividade in atividades_escolhidas:
-            linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
-            if not linha.empty:
-                gabaritos_dict[atividade] = linha.iloc[0]["GABARITO"]
-            else:
-                gabaritos_dict[atividade] = "?"
+        st.stop()
 
-        st.markdown("### ✅ Atividades Escolhidas pelo Professor:")
-        col1, col2 = st.columns(2)
-        for i, nome in enumerate(atividades_escolhidas):
-            gabarito = gabaritos_dict.get(nome, "?")
-            col = col1 if i % 2 == 0 else col2
-            col.markdown(f"**{i+1}. {nome}** - Gabarito: **{gabarito}**")
+    st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
+    grupos = respostas_do_codigo.groupby(["ESCOLA", "TURMA"])
 
-        st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
-        grupos = respostas_do_codigo.groupby(["ESCOLA", "TURMA"])
-        for (escola, turma), grupo in grupos:
-            st.markdown(f"**🏫 {escola}** - **Turma: {turma}**")
-            for _, row in grupo.iterrows():
-                nome = row["NOME"]
-                acertos = 0
-                total = 0
-                linha_resumo = ""
-                for i in range(1, 11):
-                    q = row.get(f"Q{i}", "")
-                    r = row.get(f"R{i}", "")
-                    s = row.get(f"S{i}", "")
+    for (escola, turma), grupo in grupos:
+        st.markdown(f"**🏫 {escola}** - **Turma: {turma}**")
+        for _, row in grupo.iterrows():
+            nome = row["NOME"]
+            acertos = 0
+            total = 0
+            linha_resumo = ""
 
-                    g = gabaritos_dict.get(q, "?")
-                    correto = "✔️" if s == "Certo" else "❌"
-                    if q in gabaritos_dict:
-                        total += 1
-                    if s == "Certo":
-                        acertos += 1
-                    linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
+            for i in range(5, len(row), 3):
+                q = row[i] if i < len(row) else ""
+                r = row[i+1] if i+1 < len(row) else ""
+                s = row[i+2] if i+2 < len(row) else ""
 
-                st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
-            st.markdown("---")
+                if not q:
+                    continue
+
+                correto = "✔️" if s.strip().lower() == "certo" else "❌"
+                if s.strip().lower() == "certo":
+                    acertos += 1
+                total += 1
+                linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}) {correto}</span>"
+
+            st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
+        st.markdown("---")
 else:
     st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
