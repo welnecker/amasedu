@@ -127,18 +127,27 @@ if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
 
 # --- FILTROS ANTIGOS ---
-st.markdown("### Escolha Série, Habilidade e Descritor.")
-col_serie, col_habilidade, col_descritor = st.columns(3)
+if (
+    "selecionado_sre" in st.session_state and st.session_state.selecionado_sre != "Escolha..." and
+    "selecionado_escola" in st.session_state and st.session_state.selecionado_escola != "Escolha..." and
+    "selecionado_turma" in st.session_state and st.session_state.selecionado_turma != "Escolha..."
+):
+    st.markdown("### Escolha Série, Habilidade e Descritor.")
+    col_serie, col_habilidade, col_descritor = st.columns(3)
 
-serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
-habilidade = col_habilidade.selectbox("**HABILIDADE**",
-    ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
-    key="habilidade"
-)
-descritor = col_descritor.selectbox("**DESCRITOR**",
-    ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
-    key="descritor"
-)
+    serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
+    habilidade = col_habilidade.selectbox("**HABILIDADE**",
+        ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
+        key="habilidade"
+    )
+    descritor = col_descritor.selectbox("**DESCRITOR**",
+        ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
+        key="descritor"
+    )
+else:
+    st.info("👈 Antes de escolher as questões, selecione **SRE**, **Escola** e **Turma**.")
+    st.stop()
+
 
 # --- EXIBIÇÃO DE QUESTÕES ---
 if descritor != "Escolha...":
