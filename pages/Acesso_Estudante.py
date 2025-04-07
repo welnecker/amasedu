@@ -8,29 +8,9 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
 st.subheader("Preencha seus dados abaixo:")
-nome_aluno = st.text_input("Nome do(a) Aluno(a):")
-
-@st.cache_data(show_spinner=False)
-def carregar_base_seges():
-    URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
-    try:
-        df = pd.read_csv(URL)
-        df.columns = df.columns.str.strip().str.upper()
-        return df
-    except:
-        return pd.DataFrame()
-
-base = carregar_base_seges()
-escola = turma = ""
-if not base.empty:
-    escolas = sorted(base["ESCOLA"].dropna().unique())
-    escola = st.selectbox("Escola:", [""] + escolas)
-    if escola:
-        turmas = sorted(base[base["ESCOLA"] == escola]["TURMA"].dropna().unique())
-        turma = st.selectbox("Turma:", [""] + turmas)
-else:
-    st.warning("⚠️ Erro ao carregar dados de escolas e turmas.")
-
+nome_aluno = st.text_input("Nome do Aluno:")
+escola = st.text_input("Escola:")
+turma = st.text_input("Turma:")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):")
 
@@ -41,10 +21,6 @@ def normalizar_texto(txt):
 
 def gerar_id_unico(nome, escola, turma, codigo):
     return f"{normalizar_texto(nome)}_{normalizar_texto(escola)}_{normalizar_texto(turma)}_{normalizar_texto(codigo)}"
-
-# (continua com o restante do seu código original abaixo daqui)
-# …
-
 
 @st.cache_data(show_spinner=False)
 def carregar_atividades():
