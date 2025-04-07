@@ -70,7 +70,7 @@ if codigo:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE")]
+    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE") or col in ["M", "N", "O"] or col.upper().startswith("ATIVIDADE_")]
     atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
     atividades_escolhidas = [a for a in atividades_escolhidas if a]
 
@@ -112,13 +112,13 @@ if codigo:
                     r = row[i+1] if i+1 < len(row) else ""
                     s = row[i+2] if i+2 < len(row) else ""
 
+                    g = gabaritos_dict.get(q, "?")
+                    correto = "✔️" if r.upper() == g.upper() else "❌"
                     if q in gabaritos_dict:
-                        g = gabaritos_dict[q]
                         total += 1
-                        correto = "✔️" if r.upper() == g.upper() else "❌"
-                        if r.upper() == g.upper():
-                            acertos += 1
-                        linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
+                    if r.upper() == g.upper():
+                        acertos += 1
+                    linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}/{g}) {correto}</span>"
 
                 st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
                 st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
