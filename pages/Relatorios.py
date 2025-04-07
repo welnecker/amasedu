@@ -81,6 +81,9 @@ if codigo:
     if respostas_do_codigo.empty:
         st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
     else:
+        df_gabarito["ATIVIDADE"] = df_gabarito["ATIVIDADE"].astype(str).str.strip()
+        df_gabarito["GABARITO"] = df_gabarito["GABARITO"].astype(str).str.strip().str.upper()
+
         gabaritos_dict = {}
         for atividade in atividades_escolhidas:
             linha = df_gabarito[df_gabarito["ATIVIDADE"] == atividade]
