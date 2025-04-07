@@ -14,5 +14,8 @@ Clique no menu lateral em **Acesso Estudante** para responder sua atividade com 
 
 ---
 
-🛠️ Em caso de dúvidas ou problemas técnicos, entre em contato com o suporte pedagógico.
+🛠️ Em caso de dúvidas ou problemas técnicos, entre em contato com o suporte pedagógico:
+
+📧 **jdwelnecker@sedu.es.gov.br**  
+👨‍💼 **Técnico Pedagógico – GEM/Sudem**
 """)
