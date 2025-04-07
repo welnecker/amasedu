@@ -61,7 +61,7 @@ if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    df_respostas = carregar_dados("ATIVIDADES!A1:Z", has_header=True)
+    df_respostas = carregar_dados("ATIVIDADES!A1:AI", has_header=True)
 
     respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
@@ -80,7 +80,7 @@ if codigo:
             total = 0
             linha_resumo = ""
 
-            for i in range(5, len(row), 3):
+            for i in range(5, 35, 3):  # Somente Q1 a Q10 (colunas 5 a 34)
                 q = row[i] if i < len(row) else ""
                 r = row[i+1] if i+1 < len(row) else ""
                 s = row[i+2] if i+2 < len(row) else ""
