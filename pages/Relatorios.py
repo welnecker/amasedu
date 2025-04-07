@@ -70,7 +70,7 @@ if codigo:
         st.warning("❗ Código não encontrado na base de atividades geradas.")
         st.stop()
 
-    atividade_cols = [col for col in df_geradas.columns if col.startswith("ATIVIDADE_")]
+    atividade_cols = [f"ATIVIDADE_{i}" for i in range(1, 11) if f"ATIVIDADE_{i}" in df_geradas.columns]
     atividades_escolhidas = atividades_do_codigo[atividade_cols].values.flatten().tolist()
     atividades_escolhidas = [a for a in atividades_escolhidas if a]
 
@@ -107,10 +107,10 @@ if codigo:
                 acertos = 0
                 total = 0
                 linha_resumo = ""
-                for i in range(5, 35, 3):  # Q1 (F), R1 (G), S1 (H) até Q10 (AD), R10 (AE), S10 (AF)
-                    q = row[i] if i < len(row) else ""
-                    r = row[i+1] if i+1 < len(row) else ""
-                    s = row[i+2] if i+2 < len(row) else ""
+                for i in range(1, 11):
+                    q = row.get(f"Q{i}", "")
+                    r = row.get(f"R{i}", "")
+                    s = row.get(f"S{i}", "")
 
                     g = gabaritos_dict.get(q, "?")
                     correto = "✔️" if s == "Certo" else "❌"
