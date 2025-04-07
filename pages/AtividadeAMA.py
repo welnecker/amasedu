@@ -1,69 +1,44 @@
-
-# ==========================================================
-# 📦 IMPORTAÇÕES
-# ==========================================================
 import streamlit as st
 import pandas as pd
-import requests
-from io import StringIO
 from datetime import datetime
+import unicodedata
+import requests
 import random
 import string
-
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-# ==========================================================
-# ⚙️ CONFIGURAÇÃO GERAL
-# ==========================================================
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-st.markdown("""
-    <style>
-    .stApp {
-        background-image: url("https://questoesama.pages.dev/img/fundo.png");
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center top;
-        background-attachment: fixed;
-    }
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.85);
-        padding: 2rem;
-        border-radius: 15px;
-        margin-top: 100px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
-
 # ==========================================================
-# 📊 CARREGAMENTO DOS DADOS (opcional)
+# 📟 FORMULÁRIO DE CABEÇALHO
 # ==========================================================
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=452645937&single=true&output=csv"
+st.subheader("Preencha o cabeçalho da atividade:")
 
-@st.cache_data
-def carregar_dados():
-    try:
-        response = requests.get(URL_PLANILHA, timeout=10)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception:
-        return None
+escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
+data = st.date_input("Data:", value=datetime.today())
+professor = st.text_input("Nome do Professor(a):")
+serie = st.session_state.get("serie", "")
+habilidade = st.session_state.get("habilidade", "")
+descritor = st.session_state.get("descritor", "")
+sre = st.session_state.get("selecionado_sre", "")
+turma = st.session_state.get("selecionado_turma", "")
 
-dados = carregar_dados()
-if dados is None:
-    st.error("❌ Erro ao carregar os dados da planilha.")
-    if st.button("🔄 Tentar novamente"):
-        st.rerun()
+if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
+    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
 
 # ==========================================================
-# 🔧 FUNÇÕES AUXILIARES
+# 📋 LISTA DAS ATIVIDADES ESCOLHIDAS
+# ==========================================================
+st.success("Atividades selecionadas:")
+col1, col2 = st.columns(2)
+for i, nome in enumerate(st.session_state.atividades_exibidas):
+    with col1 if i % 2 == 0 else col2:
+        st.markdown(f"- **Atividade:** {nome}")
+
+# ==========================================================
+# 🚀 GERAÇÃO DE PDF E SALVAMENTO
 # ==========================================================
 def gerar_codigo_aleatorio(tamanho=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=tamanho))
@@ -90,37 +65,8 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         body={"values": linha}
     ).execute()
 
-    # Limpa o cache depois do append
     st.cache_data.clear()
 
-# ==========================================================
-# 🧾 FORMULÁRIO DE CABEÇALHO
-# ==========================================================
-st.subheader("Preencha o cabeçalho da atividade:")
-
-escola = st.text_input("Escola:")
-data = st.date_input("Data:", value=datetime.today())
-professor = st.text_input("Nome do Professor(a):")
-serie = st.session_state.get("serie", "")
-habilidade = st.session_state.get("habilidade", "")
-descritor = st.session_state.get("descritor", "")
-
-if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
-    st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
-    st.stop()
-
-# ==========================================================
-# 📋 LISTA DAS ATIVIDADES ESCOLHIDAS
-# ==========================================================
-st.success("Atividades selecionadas:")
-col1, col2 = st.columns(2)
-for i, nome in enumerate(st.session_state.atividades_exibidas):
-    with col1 if i % 2 == 0 else col2:
-        st.markdown(f"- **Atividade:** {nome}")
-
-# ==========================================================
-# 🚀 GERAÇÃO DE PDF E SALVAMENTO
-# ==========================================================
 col_gerar, col_cancelar = st.columns([1, 1])
 
 with col_gerar:
@@ -133,9 +79,9 @@ with col_gerar:
             try:
                 atividades = st.session_state.atividades_exibidas
                 codigo_atividade = gerar_codigo_aleatorio()
-                st.session_state.codigo_atividade = codigo_atividade  # Armazena para exibição
+                st.session_state.codigo_atividade = codigo_atividade
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                linha_unica = [codigo_atividade, timestamp] + atividades
+                linha_unica = [codigo_atividade, timestamp, sre, escola, turma] + atividades
 
                 creds = Credentials.from_service_account_info(
                     st.secrets["gcp_service_account"],
@@ -151,7 +97,6 @@ with col_gerar:
                     body={"values": [linha_unica]}
                 ).execute()
 
-                # Log de cabeçalho
                 dados_log = {
                     "Escola": escola,
                     "Professor": professor,
@@ -166,7 +111,6 @@ with col_gerar:
                     dados_log
                 )
 
-                # Geração do PDF
                 url_api = "https://amasedu.onrender.com/gerar-pdf"
                 payload = {
                     "escola": escola,
@@ -186,13 +130,12 @@ with col_gerar:
             except Exception as e:
                 st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
 
-# Mostrar o código e botão de download se PDF já foi gerado
 if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
     st.success("✅ PDF gerado com sucesso!")
-    st.markdown("### 🧾 Código da atividade para os alunos:")
+    st.markdown("### 📟 Código da atividade para os alunos:")
     st.code(st.session_state.codigo_atividade, language="markdown")
     st.download_button(
-        label="📥 Baixar PDF",
+        label="📅 Baixar PDF",
         data=st.session_state.pdf_bytes,
         file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
         mime="application/pdf"
@@ -201,4 +144,4 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
         st.session_state.clear()
-        st.switch_page("QuestoesAMA.py")
+        st.switch_page("pages/Acesso_Professores.py")
