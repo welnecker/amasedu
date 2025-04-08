@@ -13,19 +13,23 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
 # --- BLOQUEIO POR SENHA ---
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
+# --- Autenticação por e-mail institucional ---
+if "relatorio_autenticado" not in st.session_state:
+    st.session_state.relatorio_autenticado = False
 
-if not st.session_state.autenticado:
-    st.markdown("### Área restrita para professores")
-    senha = st.text_input("Digite a senha para continuar:", type="password")
-    if senha == "sedu":
-        st.session_state.autenticado = True
-        st.success("Acesso autorizado!")
+if not st.session_state.relatorio_autenticado:
+    st.markdown("### 🔐 Acesso restrito aos professores")
+
+    email = st.text_input("Digite seu e-mail institucional:")
+    
+    if email.endswith("@educador.edu.es.gov.br"):
+        st.session_state.relatorio_autenticado = True
+        st.success("✅ Acesso autorizado!")
         st.rerun()
-    elif senha:
-        st.error("Senha incorreta. Tente novamente.")
+    elif email:
+        st.error("❌ E-mail inválido. Use seu e-mail institucional.")
     st.stop()
+
 
 st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
