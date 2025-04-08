@@ -14,7 +14,7 @@ if not st.session_state.relatorio_autenticado:
     st.markdown("### 🔐 Acesso restrito aos professores")
 
     email = st.text_input("Digite seu e-mail institucional:")
-    
+
     if email.endswith("@educador.edu.es.gov.br"):
         st.session_state.relatorio_autenticado = True
         st.success("✅ Acesso autorizado!")
@@ -55,11 +55,21 @@ def carregar_dados(sheet_range, has_header=True):
     else:
         return pd.DataFrame(values)
 
+
 # --- Interface ---
 st.markdown("<h1 style='font-size:28px; white-space:nowrap;'>📊 Relatórios de Atividades - AMA 2025</h1>", unsafe_allow_html=True)
 st.markdown("Use o campo abaixo para buscar os dados de um código de atividade:")
 
-codigo = st.text_input("🔍 Inserir Código Desejado:").strip().upper()
+col1, col2 = st.columns([4, 1])
+with col1:
+    codigo_input = st.text_input("🔍 Inserir Código Desejado:", key="codigo_input").strip().upper()
+with col2:
+    atualizar = st.button("🔄 Atualizar Lista")
+
+if atualizar:
+    st.session_state.codigo_busca = codigo_input
+
+codigo = st.session_state.get("codigo_busca", "")
 
 if codigo:
     st.markdown("---")
@@ -67,39 +77,42 @@ if codigo:
 
     df_respostas = carregar_dados("ATIVIDADES!A1:AI", has_header=True)
 
-    respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
+    if "CODIGO" in df_respostas.columns:
+        respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
 
-    if respostas_do_codigo.empty:
-        st.info("📭 Nenhuma resposta foi enviada ainda para este código.")
-        st.stop()
+        if respostas_do_codigo.empty:
+            st.info("📬 Nenhuma resposta foi enviada ainda para este código.")
+            st.stop()
 
-    st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
-    grupos = respostas_do_codigo.groupby(["ESCOLA", "TURMA"])
+        st.markdown("### 👨‍🏫 Alunos que realizaram a atividade:")
+        grupos = respostas_do_codigo.groupby(["ESCOLA", "TURMA"])
 
-    for (escola, turma), grupo in grupos:
-        st.markdown(f"**🏫 {escola}** - **Turma: {turma}**")
-        for _, row in grupo.iterrows():
-            nome = row["NOME"]
-            acertos = 0
-            total = 0
-            linha_resumo = ""
+        for (escola, turma), grupo in grupos:
+            st.markdown(f"**🏫 {escola}** - **Turma: {turma}**")
+            for _, row in grupo.iterrows():
+                nome = row["NOME"]
+                acertos = 0
+                total = 0
+                linha_resumo = ""
 
-            for i in range(5, 35, 3):  # Somente Q1 a Q10 (colunas 5 a 34)
-                q = row[i] if i < len(row) else ""
-                r = row[i+1] if i+1 < len(row) else ""
-                s = row[i+2] if i+2 < len(row) else ""
+                for i in range(5, 35, 3):  # Somente Q1 a Q10 (colunas 5 a 34)
+                    q = row[i] if i < len(row) else ""
+                    r = row[i+1] if i+1 < len(row) else ""
+                    s = row[i+2] if i+2 < len(row) else ""
 
-                if not q:
-                    continue
+                    if not q:
+                        continue
 
-                correto = "✔️" if s.strip().lower() == "certo" else "❌"
-                if s.strip().lower() == "certo":
-                    acertos += 1
-                total += 1
-                linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}) {correto}</span>"
+                    correto = "✔️" if s.strip().lower() == "certo" else "❌"
+                    if s.strip().lower() == "certo":
+                        acertos += 1
+                    total += 1
+                    linha_resumo += f"<span style='font-size:12px; white-space:nowrap; margin-right:8px;'><b>{q}</b> ({r}) {correto}</span>"
 
-            st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
-            st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
-        st.markdown("---")
+                st.markdown(f"<b>{nome}</b> <span style='font-size:12px;'> - {acertos}/{total} acertos</span>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size:11px;'>{linha_resumo}</div>", unsafe_allow_html=True)
+            st.markdown("---")
+    else:
+        st.error("A coluna 'CODIGO' não foi encontrada na planilha.")
 else:
-    st.info("✏️ **Insira o código da atividade e tecle ENTER** para visualizar os dados.")
+    st.info("✏️ **Insira o código da atividade e clique em 'Atualizar Lista' para visualizar os dados.**")
