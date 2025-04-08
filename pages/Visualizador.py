@@ -5,7 +5,9 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Visualizador de Imagens", page_icon="🖼️")
-st.title("🖼️ Visualizador de Imagens das Atividades")
+st.markdown("""
+<h1 style='font-size:28px; white-space:nowrap;'>🖼️ Visualizador de Imagens das Atividades</h1>
+""", unsafe_allow_html=True)
 
 # --- Função para carregar dados da aba MATEMATICA ---
 @st.cache_data(show_spinner=False)
@@ -69,7 +71,7 @@ for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
         with st.container():
             st.image(url, caption=atividade, use_container_width=True)
             st.markdown(
-                f'<a href="{url}" target="_blank">🔍 Ampliar</a>',
+                f'<a href="{url}" target="_blank" style="text-decoration:none; font-size:18px;">🔍</a>',
                 unsafe_allow_html=True
             )
 
