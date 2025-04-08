@@ -21,7 +21,7 @@ if not st.session_state.relatorio_autenticado:
     st.markdown("### 🔐 Acesso restrito aos professores")
 
     email = st.text_input("Digite seu e-mail institucional:")
-
+    
     if email.endswith("@educador.edu.es.gov.br"):
         st.session_state.relatorio_autenticado = True
         st.success("✅ Acesso autorizado!")
@@ -67,16 +67,6 @@ st.markdown(
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 st.title("ATIVIDADE AMA 2025")
-
-# --- Função flexível para trocar de página ---
-def switch_page_flex(nome_alvo: str):
-    nome_alvo = nome_alvo.lower().replace(" ", "").replace("_", "")
-    paginas = st.experimental_get_pages("")
-    for path, page in paginas.items():
-        nome_pagina = page['page_name'].lower().replace(" ", "").replace("_", "")
-        if nome_alvo in nome_pagina:
-            st.switch_page(path)
-    st.error(f"Não foi possível encontrar a página '{nome_alvo}'. Verifique o nome.")
 
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
@@ -217,7 +207,8 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
     if st.button("PREENCHER CABEÇALHO"):
-        switch_page_flex("AtividadeAMA")
+      st.switch_page("pages/3_AtividadeAMA.py")
+
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
