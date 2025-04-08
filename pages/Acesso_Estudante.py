@@ -8,7 +8,15 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
 st.subheader("Preencha seus dados abaixo:")
-nome_aluno = st.text_input("Nome do(a) Aluno(a):")
+
+if "nome_estudante" not in st.session_state:
+    st.session_state.nome_estudante = ""
+
+if not st.session_state.get("atividades_em_exibicao"):
+    nome_aluno = st.text_input("Nome do(a) Estudante:")
+    st.session_state.nome_estudante = nome_aluno
+else:
+    st.text_input("Nome do(a) Estudante:", value=st.session_state.nome_estudante, disabled=True)
 
 # --- Campo para código da atividade ---
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
@@ -113,14 +121,14 @@ if not linha_codigo.empty:
     st.session_state["escola_estudante"] = linha_codigo.iloc[0]["ESCOLA"]
     st.session_state["turma_estudante"] = linha_codigo.iloc[0]["TURMA"]
 
-id_unico = gerar_id_unico(nome_aluno, st.session_state.get("escola_estudante", ""), st.session_state.get("turma_estudante", ""), codigo_atividade)
+id_unico = gerar_id_unico(st.session_state.nome_estudante, st.session_state.get("escola_estudante", ""), st.session_state.get("turma_estudante", ""), codigo_atividade)
 codigo_valido = not linha_codigo.empty
 
 if id_unico in st.session_state.respostas_enviadas:
     st.warning("❌ Você já fez a atividade com esse código.")
 else:
     if st.button("📥 Gerar Atividade") and not st.session_state.get("atividades_em_exibicao"):
-        if not all([nome_aluno.strip(), codigo_atividade.strip()]):
+        if not all([st.session_state.nome_estudante.strip(), codigo_atividade.strip()]):
             st.warning("⚠️ Por favor, preencha todos os campos.")
             st.stop()
         if not codigo_valido:
