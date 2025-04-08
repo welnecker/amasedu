@@ -25,4 +25,4 @@ else:
     st.success("Nenhuma configuração de proxy ativa.")
 
 if st.button("⬅ Voltar para atividades"):
-    st.switch_page("../QuestoesAMA.py")
+    st.switch_page("AtividadeAMA")
