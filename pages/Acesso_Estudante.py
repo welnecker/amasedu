@@ -14,6 +14,16 @@ nome_aluno = st.text_input("Nome do(a) Aluno(a):")
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):").strip().upper()
 
+# --- Persistência de estado global ---
+if "codigo_digitado" not in st.session_state:
+    st.session_state.codigo_digitado = ""
+
+if codigo_atividade:
+    st.session_state.codigo_digitado = codigo_atividade
+
+# --- Dados fixos salvos em sessão ---
+codigo_atividade = st.session_state.codigo_digitado
+
 # Placeholder para exibir escola e turma
 escola = st.session_state.get("escola_estudante", "")
 turma = st.session_state.get("turma_estudante", "")
@@ -93,9 +103,11 @@ if "respostas_enviadas" not in st.session_state:
 if "respostas_salvas" not in st.session_state:
     st.session_state.respostas_salvas = {}
 
-dados = carregar_atividades()
+# Carregar e verificar código
+if "dados_atividades" not in st.session_state:
+    st.session_state.dados_atividades = carregar_atividades()
 
-# Preencher escola e turma automaticamente ao inserir código válido
+dados = st.session_state.dados_atividades
 linha_codigo = dados[dados["CODIGO"] == codigo_atividade]
 if not linha_codigo.empty:
     st.session_state["escola_estudante"] = linha_codigo.iloc[0]["ESCOLA"]
@@ -117,7 +129,8 @@ else:
         st.session_state["atividades_em_exibicao"] = True
         st.rerun()
 
-# (continua com a lógica de exibição de atividades e envio de respostas)
+# Continuação lógica de exibição de atividades e envio de respostas
+# (preservar no session_state: nome_aluno, respostas em progresso etc)
 
 
 if st.session_state.get("atividades_em_exibicao"):
