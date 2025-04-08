@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import random
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -26,7 +27,7 @@ if not st.session_state.relatorio_autenticado:
 
 # --- Função para carregar dados do Google Sheets ---
 @st.cache_data(show_spinner=False)
-def carregar_dados(sheet_range, has_header=True):
+def carregar_dados(sheet_range, has_header=True, forcar_recarga=False):
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"])
     service = build("sheets", "v4", credentials=creds)
     result = service.spreadsheets().values().get(
@@ -40,7 +41,11 @@ def carregar_dados(sheet_range, has_header=True):
 
     if has_header:
         header = [col.strip().upper() for col in values[0]]
-        data = values[1:]
+        data = []
+        for row in values[1:]:
+            if len(row) < 2 or not row[1].strip():  # Coluna B (índice 1) vazia -> parar
+                break
+            data.append(row)
 
         col_count = len(header)
         data_corrigida = []
@@ -68,6 +73,7 @@ with col2:
 
 if atualizar:
     st.session_state.codigo_busca = codigo_input
+    st.session_state.forcar_recarga = random.random()  # força nova versão da função cacheada
 
 codigo = st.session_state.get("codigo_busca", "")
 
@@ -75,10 +81,10 @@ if codigo:
     st.markdown("---")
     st.markdown(f"### 🧾 Detalhes do código: `{codigo}`")
 
-    df_respostas = carregar_dados("ATIVIDADES!A1:AI", has_header=True)
+    df_respostas = carregar_dados("ATIVIDADES!A1:AI", has_header=True, forcar_recarga=st.session_state.get("forcar_recarga", 0))
 
     if "CODIGO" in df_respostas.columns:
-        respostas_do_codigo = df_respostas[df_respostas["CODIGO"].str.upper() == codigo]
+        respostas_do_codigo = df_respostas[df_respostas["CODIGO"].fillna("").str.strip().str.upper() == codigo]
 
         if respostas_do_codigo.empty:
             st.info("📬 Nenhuma resposta foi enviada ainda para este código.")
