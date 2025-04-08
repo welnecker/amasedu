@@ -13,8 +13,7 @@ if "nome_estudante" not in st.session_state:
     st.session_state.nome_estudante = ""
 
 if not st.session_state.get("atividades_em_exibicao"):
-    nome_aluno = st.text_input("Nome do(a) Estudante:")
-    st.session_state.nome_estudante = nome_aluno
+    st.session_state.nome_estudante = st.text_input("Nome do(a) Estudante:")
 else:
     st.text_input("Nome do(a) Estudante:", value=st.session_state.nome_estudante, disabled=True)
 
@@ -137,7 +136,10 @@ else:
         st.session_state["atividades_em_exibicao"] = True
         st.rerun()
 
-# Continua a lógica de exibição e envio de respostas usando st.session_state.nome_estudante em vez de nome_aluno
+nome_aluno = st.session_state.nome_estudante
+
+# Continua a lógica de exibição e envio de respostas usando nome_aluno
+
 
 if st.session_state.get("atividades_em_exibicao"):
     linha = dados[dados["CODIGO"] == codigo_atividade.upper()]
