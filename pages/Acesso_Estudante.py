@@ -127,7 +127,7 @@ codigo_valido = not linha_codigo.empty
 if id_unico in st.session_state.respostas_enviadas:
     st.warning("❌ Você já fez a atividade com esse código.")
 else:
-    if st.button("📥 Gerar Atividade") and not st.session_state.get("atividades_em_exibicao"):
+    if st.button("📅 Gerar Atividade") and not st.session_state.get("atividades_em_exibicao"):
         if not all([st.session_state.nome_estudante.strip(), codigo_atividade.strip()]):
             st.warning("⚠️ Por favor, preencha todos os campos.")
             st.stop()
@@ -137,9 +137,7 @@ else:
         st.session_state["atividades_em_exibicao"] = True
         st.rerun()
 
-# Continuação lógica de exibição de atividades e envio de respostas
-# (preservar no session_state: nome_aluno, respostas em progresso etc)
-
+# Continua a lógica de exibição e envio de respostas usando st.session_state.nome_estudante em vez de nome_aluno
 
 if st.session_state.get("atividades_em_exibicao"):
     linha = dados[dados["CODIGO"] == codigo_atividade.upper()]
