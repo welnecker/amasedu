@@ -144,4 +144,5 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 with col_cancelar:
     if st.button("❌ CANCELAR E RECOMEÇAR"):
         st.session_state.clear()
-        st.switch_page("pages/Acesso_Professores.py")
+        st.switch_page("1_Acesso_Professores")
+
