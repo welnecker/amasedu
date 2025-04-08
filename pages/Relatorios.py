@@ -6,19 +6,23 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="Relatórios AMA 2025", page_icon="📊")
 
 # --- Autenticação por senha ---
+# --- Autenticação por e-mail institucional ---
 if "relatorio_autenticado" not in st.session_state:
     st.session_state.relatorio_autenticado = False
 
 if not st.session_state.relatorio_autenticado:
     st.markdown("### 🔐 Acesso restrito aos professores")
-    senha = st.text_input("Digite a senha para acessar os relatórios:", type="password")
-    if senha == "sedu":
+
+    email = st.text_input("Digite seu e-mail institucional:")
+    
+    if email.endswith("@educador.edu.es.gov.br"):
         st.session_state.relatorio_autenticado = True
         st.success("✅ Acesso autorizado!")
         st.rerun()
-    elif senha:
-        st.error("❌ Senha incorreta.")
+    elif email:
+        st.error("❌ E-mail inválido. Use seu e-mail institucional.")
     st.stop()
+
 
 # --- Função para carregar dados do Google Sheets ---
 @st.cache_data(show_spinner=False)
