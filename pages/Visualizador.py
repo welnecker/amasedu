@@ -9,6 +9,24 @@ st.markdown("""
 <h1 style='font-size:28px; white-space:nowrap;'>🖼️ Visualizador de Imagens das Atividades</h1>
 """, unsafe_allow_html=True)
 
+# --- Autenticação por senha ---
+# --- Autenticação por e-mail institucional ---
+if "relatorio_autenticado" not in st.session_state:
+    st.session_state.relatorio_autenticado = False
+
+if not st.session_state.relatorio_autenticado:
+    st.markdown("### 🔐 Acesso restrito aos professores")
+
+    email = st.text_input("Digite seu e-mail institucional:")
+    
+    if email.endswith("@educador.edu.es.gov.br"):
+        st.session_state.relatorio_autenticado = True
+        st.success("✅ Acesso autorizado!")
+        st.rerun()
+    elif email:
+        st.error("❌ E-mail inválido. Use seu e-mail institucional.")
+    st.stop()
+
 # --- Função para carregar dados da aba MATEMATICA ---
 @st.cache_data(show_spinner=False)
 def carregar_dados_mat():
