@@ -6,6 +6,36 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Relatórios AMA 2025", page_icon="📊")
 
+st.markdown(
+    """
+    <style>
+    /* Reduz a largura da sidebar */
+    .css-1lcbmhc.e1fqkh3o3 {
+        width: 220px;
+    }
+
+    /* Centraliza e limita a largura do conteúdo principal */
+    .main .block-container {
+        max-width: 950px;
+        margin: auto;
+        padding-top: 2rem;
+    }
+
+    /* Alinha botão com campo */
+    .element-container:has(input) {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Título com espaçamento agradável */
+    h1 {
+        margin-bottom: 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # --- Autenticação por senha ---
 # --- Autenticação por e-mail institucional ---
 if "relatorio_autenticado" not in st.session_state:
