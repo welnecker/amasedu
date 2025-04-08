@@ -6,34 +6,28 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Relatórios AMA 2025", page_icon="📊")
 
-st.markdown(
-    """
+st.markdown("""
     <style>
-    /* Reduz a largura da sidebar */
-    .css-1lcbmhc.e1fqkh3o3 {
-        width: 220px;
+    /* Centraliza e limita a largura do container principal */
+    .appview-container .main .block-container {
+        max-width: 1000px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 2rem;
+        padding-right: 2rem;
     }
 
-    /* Centraliza e limita a largura do conteúdo principal */
-    .main .block-container {
-        max-width: 950px;
-        margin: auto;
-        padding-top: 2rem;
+    /* Opcional: ajusta a largura da barra lateral */
+    section[data-testid="stSidebar"] {
+        width: 250px !important;
     }
 
-    /* Alinha botão com campo */
-    .element-container:has(input) {
-        margin-bottom: 0.25rem;
-    }
-
-    /* Título com espaçamento agradável */
-    h1 {
-        margin-bottom: 1rem;
+    /* Garante que botões não fiquem colados no campo */
+    button[kind="secondary"] {
+        margin-top: 1.75rem;
     }
     </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 
 # --- Autenticação por senha ---
