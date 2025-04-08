@@ -59,7 +59,7 @@ st.markdown(f"### Imagens para o descritor `{descritor_opcao}` - Nível `{nivel_
 
 col1, col2 = st.columns(2)
 for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
-    url = f"https://raw.githubusercontent.com/welnecker/questoesama/main/imagens/{atividade}.jpg"
+    url = f"https://raw.githubusercontent.com/welnecker/questoesama/main/{atividade}.jpg"
     with col1 if i % 2 == 0 else col2:
         st.image(url, caption=atividade, use_container_width=True)
         with st.expander("🔍 Ampliar"):
