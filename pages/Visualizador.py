@@ -37,6 +37,7 @@ if df.empty:
 df["SERIE"] = df["SERIE"].str.strip()
 df["HABILIDADE"] = df["HABILIDADE"].str.strip()
 df["DESCRITOR"] = df["DESCRITOR"].str.strip()
+df["NIVEL"] = df["NIVEL"].str.strip()
 df["ATIVIDADE"] = df["ATIVIDADE"].str.strip()
 
 # --- Menu de seleção hierárquico ---
@@ -47,11 +48,14 @@ habilidade_opcao = st.selectbox("Selecione a Habilidade:", sorted(df_filtrado_se
 df_filtrado_hab = df_filtrado_serie[df_filtrado_serie["HABILIDADE"] == habilidade_opcao]
 
 descritor_opcao = st.selectbox("Selecione o Descritor:", sorted(df_filtrado_hab["DESCRITOR"].dropna().unique()))
-df_final = df_filtrado_hab[df_filtrado_hab["DESCRITOR"] == descritor_opcao]
+df_filtrado_desc = df_filtrado_hab[df_filtrado_hab["DESCRITOR"] == descritor_opcao]
+
+nivel_opcao = st.selectbox("Selecione o Nível:", sorted(df_filtrado_desc["NIVEL"].dropna().unique()))
+df_final = df_filtrado_desc[df_filtrado_desc["NIVEL"] == nivel_opcao]
 
 # --- Exibir imagens ---
 st.markdown("---")
-st.markdown(f"### Imagens para o descritor `{descritor_opcao}`")
+st.markdown(f"### Imagens para o descritor `{descritor_opcao}` - Nível `{nivel_opcao}`")
 
 col1, col2 = st.columns(2)
 for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
