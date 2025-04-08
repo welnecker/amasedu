@@ -40,17 +40,22 @@ df["DESCRITOR"] = df["DESCRITOR"].str.strip()
 df["NIVEL"] = df["NIVEL"].str.strip()
 df["ATIVIDADE"] = df["ATIVIDADE"].str.strip()
 
-# --- Menu de seleção hierárquico ---
-serie_opcao = st.selectbox("Selecione a Série:", sorted(df["SERIE"].dropna().unique()))
+# --- Menus suspensos em linha ---
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    serie_opcao = st.selectbox("Série", sorted(df["SERIE"].dropna().unique()))
 df_filtrado_serie = df[df["SERIE"] == serie_opcao]
 
-habilidade_opcao = st.selectbox("Selecione a Habilidade:", sorted(df_filtrado_serie["HABILIDADE"].dropna().unique()))
+with col2:
+    habilidade_opcao = st.selectbox("Habilidade", sorted(df_filtrado_serie["HABILIDADE"].dropna().unique()))
 df_filtrado_hab = df_filtrado_serie[df_filtrado_serie["HABILIDADE"] == habilidade_opcao]
 
-descritor_opcao = st.selectbox("Selecione o Descritor:", sorted(df_filtrado_hab["DESCRITOR"].dropna().unique()))
+with col3:
+    descritor_opcao = st.selectbox("Descritor", sorted(df_filtrado_hab["DESCRITOR"].dropna().unique()))
 df_filtrado_desc = df_filtrado_hab[df_filtrado_hab["DESCRITOR"] == descritor_opcao]
 
-nivel_opcao = st.selectbox("Selecione o Nível:", sorted(df_filtrado_desc["NIVEL"].dropna().unique()))
+with col4:
+    nivel_opcao = st.selectbox("Nível", sorted(df_filtrado_desc["NIVEL"].dropna().unique()))
 df_final = df_filtrado_desc[df_filtrado_desc["NIVEL"] == nivel_opcao]
 
 # --- Exibir imagens ---
@@ -61,9 +66,12 @@ col1, col2 = st.columns(2)
 for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
     url = f"https://raw.githubusercontent.com/welnecker/questoesama/main/{atividade}.jpg"
     with col1 if i % 2 == 0 else col2:
-        st.image(url, caption=atividade, use_container_width=True)
-        with st.expander("🔍 Ampliar"):
-            st.image(url, use_container_width=True)
+        with st.container():
+            st.image(url, caption=atividade, use_container_width=True)
+            st.markdown(
+                f'<a href="{url}" target="_blank">🔍 Ampliar</a>',
+                unsafe_allow_html=True
+            )
 
 if df_final.empty:
     st.info("Nenhuma imagem encontrada para os filtros selecionados.")
