@@ -112,12 +112,16 @@ with col_gerar:
                 )
 
                 url_api = "https://amasedu.onrender.com/gerar-pdf"
+                titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.get('disciplina') == 'MATEMATICA' else 'LÍNGUA PORTUGUESA'}"
+
                 payload = {
-                    "escola": escola,
-                    "professor": professor,
-                    "data": data.strftime("%Y-%m-%d"),
-                    "atividades": atividades
-                }
+                "escola": escola,
+                "professor": professor,
+                "data": data.strftime("%Y-%m-%d"),
+                "atividades": atividades,
+                "titulo": titulo
+}
+
                 response = requests.post(url_api, json=payload)
 
                 if response.status_code == 200:
