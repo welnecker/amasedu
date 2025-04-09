@@ -9,3 +9,4 @@ google-api-python-client
 qrcode
 Pillow
 plotly==5.3.1
+numpy==1.21.4
