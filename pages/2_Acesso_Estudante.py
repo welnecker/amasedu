@@ -4,10 +4,10 @@ from datetime import datetime
 import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-from utils.envio_respostas import enviar_respostas_em_blocos
+from utils.envio_respostas import enviar_respostas_em_blocos, escolher_credencial_aleatoria
 import time
 
-st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
+st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="✨")
 
 st.subheader("Preencha seus dados abaixo:")
 
@@ -192,9 +192,14 @@ if st.session_state.get("atividades_em_exibicao"):
                     acertos_detalhe[atividade] = situacao
                     linha_envio.extend([atividade, resposta, situacao])
 
+                # Selecionar conta aleatória do secrets
+                contas = st.secrets["gcp_service_accounts"]
+                todas_credenciais = [contas["cred1"], contas["cred2"], contas["cred3"]]
+                cred = escolher_credencial_aleatoria(todas_credenciais)
+
                 with st.spinner("Enviando suas respostas... Aguarde."):
                     start = time.time()
-                    enviar_respostas_em_blocos([linha_envio])
+                    enviar_respostas_em_blocos([linha_envio], credencial=cred)
                     fim = time.time()
 
                 st.session_state.respostas_enviadas.add(id_unico)
