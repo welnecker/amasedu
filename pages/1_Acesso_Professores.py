@@ -68,11 +68,14 @@ col1, col2 = st.columns(2)
 if "disciplina" not in st.session_state:
     st.session_state.disciplina = None
 
-if col1.button("📘 MATEMÁTICA"):
+botao_matematica = col1.button("📘 MATEMÁTICA", disabled=st.session_state.disciplina is not None)
+botao_portugues = col2.button("📗 LÍNGUA PORTUGUESA", disabled=st.session_state.disciplina is not None)
+
+if botao_matematica:
     st.session_state.disciplina = "MATEMATICA"
     st.rerun()
 
-if col2.button("📗 LÍNGUA PORTUGUESA"):
+if botao_portugues:
     st.session_state.disciplina = "PORTUGUES"
     st.rerun()
 
@@ -80,7 +83,12 @@ if not st.session_state.disciplina:
     st.warning("Selecione uma disciplina para continuar.")
     st.stop()
 
-st.success(f"✅ Disciplina selecionada: {st.session_state.disciplina}")
+# Mensagem de confirmação com destaque visual
+st.markdown(
+    f"<div style='padding:10px; background-color:#dff0d8; border-radius:10px;'><b>✅ Disciplina selecionada:</b> {st.session_state.disciplina}</div>",
+    unsafe_allow_html=True
+)
+
 
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
