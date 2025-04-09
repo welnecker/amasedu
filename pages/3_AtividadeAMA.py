@@ -145,10 +145,10 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         mime="application/pdf"
     )
 
-with col_cancelar:
-    if st.button("❌ CANCELAR E RECOMEÇAR"):
-    st.session_state["reiniciar_pedido"] = True
-    st.switch_page("pages/1_Acesso_Professores")
+    with col_cancelar:
+        if st.button("❌ CANCELAR E RECOMEÇAR"):
+            st.session_state["reiniciar_pedido"] = True
+            st.switch_page("pages/1_Acesso_Professores")
 
 
 
