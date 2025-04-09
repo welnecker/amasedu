@@ -10,14 +10,16 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-# Redirecionamento seguro após clicar em "Cancelar e Recomeçar"
-if st.session_state.get("reiniciar_pedido"):
-    st.session_state.clear()
+# 🔄 Redirecionamento seguro ao voltar
+if st.session_state.get("voltar_para_pagina_inicial"):
     st.switch_page("pages/1_Acesso_Professores")
 
+# ⬆️ Flag para evitar cliques duplicados em GERAR ATIVIDADE
+if "pdf_gerado" not in st.session_state:
+    st.session_state.pdf_gerado = False
 
 # ==========================================================
-# 📟 FORMULÁRIO DE CABEÇALHO
+# 📲 FORMULÁRIO DE CABEÇALHO
 # ==========================================================
 st.subheader("Preencha o cabeçalho da atividade:")
 
@@ -34,9 +36,6 @@ if "atividades_exibidas" not in st.session_state or not st.session_state.ativida
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
 
-# ==========================================================
-# 📋 LISTA DAS ATIVIDADES ESCOLHIDAS
-# ==========================================================
 st.success("Atividades selecionadas:")
 col1, col2 = st.columns(2)
 for i, nome in enumerate(st.session_state.atividades_exibidas):
@@ -76,7 +75,7 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
 col_gerar, col_cancelar = st.columns([1, 1])
 
 with col_gerar:
-    if st.button("📄 GERAR ATIVIDADE"):
+    if st.button("📄 GERAR ATIVIDADE", disabled=st.session_state.pdf_gerado):
         if not escola or not professor:
             st.warning("Preencha todos os campos antes de gerar o PDF.")
             st.stop()
@@ -117,21 +116,20 @@ with col_gerar:
                     dados_log
                 )
 
-                url_api = "https://amasedu.onrender.com/gerar-pdf"
                 titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.get('disciplina') == 'MATEMATICA' else 'LÍNGUA PORTUGUESA'}"
-
+                url_api = "https://amasedu.onrender.com/gerar-pdf"
                 payload = {
-                "escola": escola,
-                "professor": professor,
-                "data": data.strftime("%Y-%m-%d"),
-                "atividades": atividades,
-                "titulo": titulo
-}
-
+                    "escola": escola,
+                    "professor": professor,
+                    "data": data.strftime("%Y-%m-%d"),
+                    "atividades": atividades,
+                    "titulo": titulo
+                }
                 response = requests.post(url_api, json=payload)
 
                 if response.status_code == 200:
                     st.session_state.pdf_bytes = response.content
+                    st.session_state.pdf_gerado = True
                 else:
                     st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
 
@@ -151,12 +149,9 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         mime="application/pdf"
     )
 
-    with col_cancelar:
-        if st.button("❌ CANCELAR E RECOMEÇAR"):
-            st.session_state["reiniciar_pedido"] = True
-            st.toast("🔁 Retornando à página inicial...")
-            st.rerun()
-
-
-
-
+# ❌ Botão sempre visível para reiniciar a qualquer momento
+with col_cancelar:
+    if st.button("❌ CANCELAR E RECOMEÇAR"):
+        st.session_state["voltar_para_pagina_inicial"] = True
+        st.toast("🔁 Retornando à página inicial...")
+        st.rerun()
