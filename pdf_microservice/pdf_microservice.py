@@ -23,17 +23,23 @@ async def gerar_pdf(req: PDFRequest):
         pdf = fitz.open("modelo.pdf")
         pagina = pdf[0]
 
-        # Cabeçalho
-        texto = (
-            f"Escola: {req.escola}    Data: {datetime.strptime(req.data, '%Y-%m-%d').strftime('%d/%m/%Y')}\n"
-            f"Estudante: _________________________________    Turma: ____________\n"
-            f"Professor(a): {req.professor}"
-        )
-        pagina.insert_text(fitz.Point(72, 100), texto, fontsize=12, fontname="helv", color=(0, 0, 0))
+        # Cabeçalho com espaçamento personalizado
+        y_base = 100
+        pagina.insert_text(fitz.Point(72, y_base), f"Escola: {req.escola}    Data: {datetime.strptime(req.data, '%Y-%m-%d').strftime('%d/%m/%Y')}", fontsize=12, fontname="helv", color=(0, 0, 0))
+        pagina.insert_text(fitz.Point(72, y_base + 20), "Estudante: _________________________________    Turma: ____________", fontsize=12, fontname="helv", color=(0, 0, 0))
+        pagina.insert_text(fitz.Point(72, y_base + 40), f"Professor(a): {req.professor}", fontsize=12, fontname="helv", color=(0, 0, 0))
 
-        # Título da atividade
-        pagina.insert_text(fitz.Point(72, 170), req.titulo.upper(), fontsize=14, fontname="helv", color=(0, 0, 0))
-        y = 210  # margem inicial para imagens
+
+        # Título da atividade - Centralizado
+        titulo_texto = req.titulo.upper()
+        largura_titulo = fitz.get_text_length(titulo_texto, fontname="helv", fontsize=14)
+        pagina_largura = pagina.rect.width
+        posicao_x = (pagina_largura - largura_titulo) / 2
+
+        pagina.insert_text(fitz.Point(posicao_x, 160), titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
+
+        # Começo das imagens após o título
+        y = 185
 
         for nome in req.atividades:
             url_img = f"https://questoesama.pages.dev/{nome}.jpg"
@@ -65,4 +71,3 @@ async def gerar_pdf(req: PDFRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
