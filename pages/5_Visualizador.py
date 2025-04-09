@@ -9,7 +9,6 @@ st.markdown("""
 <h1 style='font-size:28px; white-space:nowrap;'>🖼️ Visualizador de Imagens das Atividades</h1>
 """, unsafe_allow_html=True)
 
-# --- Autenticação por senha ---
 # --- Autenticação por e-mail institucional ---
 if "relatorio_autenticado" not in st.session_state:
     st.session_state.relatorio_autenticado = False
@@ -27,14 +26,17 @@ if not st.session_state.relatorio_autenticado:
         st.error("❌ E-mail inválido. Use seu e-mail institucional.")
     st.stop()
 
-# --- Função para carregar dados da aba MATEMATICA ---
+# --- Escolha da disciplina ---
+disciplina = st.radio("Escolha a disciplina:", ["MATEMATICA", "PORTUGUES"], horizontal=True)
+
+# --- Função para carregar dados da aba correspondente ---
 @st.cache_data(show_spinner=False)
-def carregar_dados_mat():
+def carregar_dados(disc):
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"])
     service = build("sheets", "v4", credentials=creds)
     result = service.spreadsheets().values().get(
         spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-        range="MATEMATICA!A1:Z"
+        range=f"{disc}!A1:Z"
     ).execute()
 
     values = result.get("values", [])
@@ -47,20 +49,17 @@ def carregar_dados_mat():
     df = df.dropna(subset=["ATIVIDADE"])
     return df
 
-df = carregar_dados_mat()
+df = carregar_dados(disciplina)
 
 if df.empty:
-    st.warning("⚠️ Nenhuma atividade encontrada na aba MATEMATICA.")
+    st.warning(f"⚠️ Nenhuma atividade encontrada na aba {disciplina}.")
     st.stop()
 
-# Normalizar e ordenar
-df["SERIE"] = df["SERIE"].str.strip()
-df["HABILIDADE"] = df["HABILIDADE"].str.strip()
-df["DESCRITOR"] = df["DESCRITOR"].str.strip()
-df["NIVEL"] = df["NIVEL"].str.strip()
-df["ATIVIDADE"] = df["ATIVIDADE"].str.strip()
+# --- Normalização ---
+for col in ["SERIE", "HABILIDADE", "DESCRITOR", "NIVEL", "ATIVIDADE"]:
+    df[col] = df[col].str.strip()
 
-# --- Menus suspensos em linha ---
+# --- Filtros ---
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     serie_opcao = st.selectbox("Série", sorted(df["SERIE"].dropna().unique()))
@@ -78,7 +77,7 @@ with col4:
     nivel_opcao = st.selectbox("Nível", sorted(df_filtrado_desc["NIVEL"].dropna().unique()))
 df_final = df_filtrado_desc[df_filtrado_desc["NIVEL"] == nivel_opcao]
 
-# --- Exibir imagens ---
+# --- Exibição das imagens ---
 st.markdown("---")
 st.markdown(f"### Imagens para o descritor `{descritor_opcao}` - Nível `{nivel_opcao}`")
 
