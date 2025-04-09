@@ -12,6 +12,8 @@ st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
 # ✅ Redirecionamento seguro ao voltar para página inicial
 if st.session_state.get("voltar_para_pagina_inicial"):
+    st.cache_data.clear()
+    st.session_state.clear()
     st.switch_page("pages/1_Acesso_Professores")
 
 # 🚫 Impede múltiplos cliques no botão GERAR ATIVIDADE
