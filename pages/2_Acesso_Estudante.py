@@ -4,6 +4,8 @@ from datetime import datetime
 import unicodedata
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from utils.envio_respostas import enviar_respostas_em_blocos
+import time
 
 st.set_page_config(page_title="Atividade Online AMA 2025", page_icon="💡")
 
@@ -17,21 +19,17 @@ if not st.session_state.get("atividades_em_exibicao"):
 else:
     st.text_input("Nome do(a) Estudante:", value=st.session_state.nome_estudante, disabled=True)
 
-# --- Campo para código da atividade ---
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):").strip().upper()
 
-# --- Persistência de estado global ---
 if "codigo_digitado" not in st.session_state:
     st.session_state.codigo_digitado = ""
 
 if codigo_atividade:
     st.session_state.codigo_digitado = codigo_atividade
 
-# --- Dados fixos salvos em sessão ---
 codigo_atividade = st.session_state.codigo_digitado
 
-# Placeholder para exibir escola e turma
 escola = st.session_state.get("escola_estudante", "")
 turma = st.session_state.get("turma_estudante", "")
 st.text_input("Escola:", value=escola, disabled=True)
@@ -110,7 +108,6 @@ if "respostas_enviadas" not in st.session_state:
 if "respostas_salvas" not in st.session_state:
     st.session_state.respostas_salvas = {}
 
-# Carregar e verificar código
 if "dados_atividades" not in st.session_state:
     st.session_state.dados_atividades = carregar_atividades()
 
@@ -138,9 +135,6 @@ else:
 
 nome_aluno = st.session_state.nome_estudante
 
-# Continua a lógica de exibição e envio de respostas usando nome_aluno
-
-
 if st.session_state.get("atividades_em_exibicao"):
     linha = dados[dados["CODIGO"] == codigo_atividade.upper()]
     atividades = [
@@ -152,7 +146,6 @@ if st.session_state.get("atividades_em_exibicao"):
     st.markdown("---")
     st.subheader("Responda cada questão marcando uma alternativa:")
 
-    # Se já respondeu, mostrar resumo com caixas desabilitadas
     ja_respondeu = id_unico in st.session_state.respostas_enviadas
     respostas = {}
 
@@ -161,7 +154,6 @@ if st.session_state.get("atividades_em_exibicao"):
         st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
 
         if ja_respondeu:
-            # Mostrar resposta salva desabilitada
             resposta_salva = st.session_state.respostas_salvas.get(id_unico, {}).get(atividade, "❓")
             st.radio("Escolha a alternativa:", ["A", "B", "C", "D", "E"], key=f"resp_{idx}", index=None, disabled=True)
             st.markdown(f"**Resposta enviada:** {resposta_salva}")
@@ -200,33 +192,22 @@ if st.session_state.get("atividades_em_exibicao"):
                     acertos_detalhe[atividade] = situacao
                     linha_envio.extend([atividade, resposta, situacao])
 
-                creds = Credentials.from_service_account_info(
-                    st.secrets["gcp_service_account"],
-                    scopes=["https://www.googleapis.com/auth/spreadsheets"],
-                )
-                service = build("sheets", "v4", credentials=creds)
+                with st.spinner("Enviando suas respostas... Aguarde."):
+                    start = time.time()
+                    enviar_respostas_em_blocos([linha_envio])
+                    fim = time.time()
 
-                service.spreadsheets().values().append(
-                    spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                    range="ATIVIDADES!A1",
-                    valueInputOption="USER_ENTERED",
-                    insertDataOption="INSERT_ROWS",
-                    body={"values": [linha_envio]},
-                ).execute()
-
-                # Armazenar como respondido
                 st.session_state.respostas_enviadas.add(id_unico)
                 st.session_state.respostas_salvas[id_unico] = acertos_detalhe
-                st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(respostas)}.")
+                st.success(f"✅ Respostas enviadas! Você acertou {acertos}/{len(respostas)}. Tempo: {fim - start:.2f}s")
                 st.rerun()
 
             except Exception as e:
                 st.error(f"Erro ao enviar respostas: {e}")
 
-
 if id_unico in st.session_state.respostas_salvas:
     acertos_detalhe = st.session_state.respostas_salvas.get(id_unico, {})
-    
+
     if acertos_detalhe:
         st.markdown("---")
         for idx, atividade in enumerate(atividades):
@@ -241,5 +222,3 @@ if id_unico in st.session_state.respostas_salvas:
             st.session_state.pop(f"resp_{idx}", None)
         st.session_state.respostas_salvas.pop(id_unico, None)
         st.rerun()
-
-
