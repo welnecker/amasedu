@@ -10,6 +10,12 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
+# Redirecionamento seguro após clicar em "Cancelar e Recomeçar"
+if st.session_state.get("reiniciar_pedido"):
+    st.session_state.clear()
+    st.switch_page("pages/1_Acesso_Professores")
+
+
 # ==========================================================
 # 📟 FORMULÁRIO DE CABEÇALHO
 # ==========================================================
@@ -148,7 +154,9 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
     with col_cancelar:
         if st.button("❌ CANCELAR E RECOMEÇAR"):
             st.session_state["reiniciar_pedido"] = True
-            st.switch_page("pages/1_Acesso_Professores")
+            st.toast("🔁 Retornando à página inicial...")
+            st.rerun()
+
 
 
 
