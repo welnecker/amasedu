@@ -146,7 +146,10 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
     )
 
 with col_cancelar:
-    if st.button("❌ CANCELAR E RECOMEÇAR"):
+    if st.button("❌ CANCELAR E RECOMEÇAR") and "reiniciando" not in st.session_state:
+        st.toast("🔁 Reiniciando a aplicação...")
+        st.session_state["reiniciando"] = True  # trava múltiplos cliques
         st.session_state.clear()
         st.switch_page("pages/1_Acesso_Professores")
+
 
