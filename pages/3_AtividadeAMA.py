@@ -71,68 +71,70 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
 col_gerar, col_cancelar = st.columns([1, 1])
 
 with col_gerar:
-    if st.button("📄 GERAR ATIVIDADE", disabled=st.session_state.pdf_gerado):
-        if not escola or not professor:
-            st.warning("Preencha todos os campos antes de gerar o PDF.")
-            st.stop()
+    gerar_pdf = st.button("📄 GERAR ATIVIDADE", disabled=st.session_state.get("pdf_gerado", False))
 
-        with st.spinner("Gerando PDF, salvando código e registrando log..."):
-            try:
-                atividades = st.session_state.atividades_exibidas
-                codigo_atividade = gerar_codigo_aleatorio()
-                st.session_state.codigo_atividade = codigo_atividade
-                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                linha_unica = [codigo_atividade, timestamp, sre, escola, turma] + atividades
+if gerar_pdf:
+    if not escola or not professor:
+        st.warning("Preencha todos os campos antes de gerar o PDF.")
+        st.stop()
 
-                creds = Credentials.from_service_account_info(
-                    st.secrets["gcp_service_account"],
-                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
-                )
-                service = build("sheets", "v4", credentials=creds)
+    with st.spinner("Gerando PDF, salvando código e registrando log..."):
+        try:
+            atividades = st.session_state.atividades_exibidas
+            codigo_atividade = gerar_codigo_aleatorio()
+            st.session_state.codigo_atividade = codigo_atividade
+            timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            linha_unica = [codigo_atividade, timestamp, sre, escola, turma] + atividades
 
-                service.spreadsheets().values().append(
-                    spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                    range="ATIVIDADES_GERADAS!A1",
-                    valueInputOption="USER_ENTERED",
-                    insertDataOption="INSERT_ROWS",
-                    body={"values": [linha_unica]}
-                ).execute()
+            creds = Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            service = build("sheets", "v4", credentials=creds)
 
-                dados_log = {
-                    "Escola": escola,
-                    "Professor": professor,
-                    "Série": serie,
-                    "Habilidades": habilidade,
-                    "Descritor": descritor,
-                    "TotalQuestoes": len(atividades)
-                }
-                registrar_log_google_sheets(
-                    st.secrets["gcp_service_account"],
-                    "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
-                    dados_log
-                )
+            service.spreadsheets().values().append(
+                spreadsheetId="17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                range="ATIVIDADES_GERADAS!A1",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [linha_unica]}
+            ).execute()
 
-                titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.get('disciplina') == 'MATEMATICA' else 'LÍNGUA PORTUGUESA'}"
-                url_api = "https://amasedu.onrender.com/gerar-pdf"
-                payload = {
-                    "escola": escola,
-                    "professor": professor,
-                    "data": data.strftime("%Y-%m-%d"),
-                    "atividades": atividades,
-                    "titulo": titulo
-                }
-                response = requests.post(url_api, json=payload)
+            dados_log = {
+                "Escola": escola,
+                "Professor": professor,
+                "Série": serie,
+                "Habilidades": habilidade,
+                "Descritor": descritor,
+                "TotalQuestoes": len(atividades)
+            }
+            registrar_log_google_sheets(
+                st.secrets["gcp_service_account"],
+                "17SUODxQqwWOoC9Bns--MmEDEruawdeEZzNXuwh3ZIj8",
+                dados_log
+            )
 
-                if response.status_code == 200:
-                    st.session_state.pdf_bytes = response.content
-                    st.session_state.pdf_gerado = True
-                else:
-                    st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
+            titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.get('disciplina') == 'MATEMATICA' else 'LÍNGUA PORTUGUESA'}"
+            url_api = "https://amasedu.onrender.com/gerar-pdf"
+            payload = {
+                "escola": escola,
+                "professor": professor,
+                "data": data.strftime("%Y-%m-%d"),
+                "atividades": atividades,
+                "titulo": titulo
+            }
+            response = requests.post(url_api, json=payload)
 
-                st.cache_data.clear()
+            if response.status_code == 200:
+                st.session_state.pdf_bytes = response.content
+                st.session_state.pdf_gerado = True
+            else:
+                st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
 
-            except Exception as e:
-                st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
+            st.cache_data.clear()
+
+        except Exception as e:
+            st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
 
 if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
     st.success("✅ PDF gerado com sucesso!")
