@@ -237,4 +237,6 @@ if descritor != "Escolha...":
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
+    st.cache_data.clear()  # limpa o cache de dados da planilha
     st.rerun()
+
