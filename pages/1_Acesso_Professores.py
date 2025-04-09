@@ -1,4 +1,4 @@
-# app.py (página inicial com proteção por senha para professores)
+# 1_Acesso_Professores.py
 import streamlit as st
 import pandas as pd
 import requests
@@ -13,15 +13,12 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
 # --- BLOQUEIO POR SENHA ---
-# --- Autenticação por e-mail institucional ---
 if "relatorio_autenticado" not in st.session_state:
     st.session_state.relatorio_autenticado = False
 
 if not st.session_state.relatorio_autenticado:
     st.markdown("### 🔐 Acesso restrito aos professores")
-
     email = st.text_input("Digite seu e-mail institucional:")
-    
     if email.endswith("@educador.edu.es.gov.br"):
         st.session_state.relatorio_autenticado = True
         st.success("✅ Acesso autorizado!")
@@ -30,43 +27,60 @@ if not st.session_state.relatorio_autenticado:
         st.error("❌ E-mail inválido. Use seu e-mail institucional.")
     st.stop()
 
-
 st.markdown("### ✅ Versão atual: 01/04/2025 - 13h12")
 
 # --- ESTILO VISUAL ---
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-image: url("https://questoesama.pages.dev/img/fundo.png");
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center top;
-        background-attachment: fixed;
-    }
-    .main > div {
-        background-color: rgba(255, 255, 255, 0.85);
-        padding: 2rem;
-        border-radius: 15px;
-        margin-top: 100px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    div.block-container {
-        padding: 0.5rem 1rem;
-    }
-    .element-container {
-        margin-bottom: 0.25rem !important;
-    }
-    hr {
-        margin: 0.5rem 0;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.stApp {
+    background-image: url("https://questoesama.pages.dev/img/fundo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-attachment: fixed;
+}
+.main > div {
+    background-color: rgba(255, 255, 255, 0.85);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-top: 100px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+div.block-container {
+    padding: 0.5rem 1rem;
+}
+.element-container {
+    margin-bottom: 0.25rem !important;
+}
+hr {
+    margin: 0.5rem 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("<div style='height:140px'></div>", unsafe_allow_html=True)
 st.title("ATIVIDADE AMA 2025")
+
+# --- ESCOLHA DA DISCIPLINA ---
+st.markdown("### Escolha a disciplina:")
+col1, col2 = st.columns(2)
+
+if "disciplina" not in st.session_state:
+    st.session_state.disciplina = None
+
+if col1.button("📘 MATEMÁTICA"):
+    st.session_state.disciplina = "MATEMATICA"
+    st.rerun()
+
+if col2.button("📗 LÍNGUA PORTUGUESA"):
+    st.session_state.disciplina = "PORTUGUES"
+    st.rerun()
+
+if not st.session_state.disciplina:
+    st.warning("Selecione uma disciplina para continuar.")
+    st.stop()
+
+st.success(f"✅ Disciplina selecionada: {st.session_state.disciplina}")
 
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
@@ -103,8 +117,12 @@ if not base_seges.empty and colunas_necessarias.issubset(base_seges.columns):
 else:
     st.warning("⚠️ A aba BASE_SEGES está vazia ou com colunas inválidas. Verifique se contém 'SRE', 'ESCOLA' e 'TURMA'.")
 
-# --- CARREGAMENTO DE DADOS PARA QUESTÕES ---
-URL_PLANILHA_QUESTOES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+# --- CARREGAMENTO DE DADOS DAS QUESTÕES ---
+GIDS = {
+    "MATEMATICA": "2127889637",
+    "PORTUGUES": "1217179376"
+}
+URL_PLANILHA_QUESTOES = f"https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid={GIDS[st.session_state.disciplina]}&single=true&output=csv"
 
 @st.cache_data(show_spinner=False)
 def carregar_dados():
@@ -130,11 +148,11 @@ if dados is None:
 if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
 
-# --- FILTROS ANTIGOS ---
+# --- FILTROS ---
 if (
-    "selecionado_sre" in st.session_state and st.session_state.selecionado_sre != "Escolha..." and
-    "selecionado_escola" in st.session_state and st.session_state.selecionado_escola != "Escolha..." and
-    "selecionado_turma" in st.session_state and st.session_state.selecionado_turma != "Escolha..."
+    st.session_state.get("selecionado_sre") != "Escolha..." and
+    st.session_state.get("selecionado_escola") != "Escolha..." and
+    st.session_state.get("selecionado_turma") != "Escolha..."
 ):
     st.markdown("### Escolha Série, Habilidade e Descritor.")
     col_serie, col_habilidade, col_descritor = st.columns(3)
@@ -152,8 +170,7 @@ else:
     st.info("👈 Antes de escolher as questões, selecione **SRE**, **Escola** e **Turma**.")
     st.stop()
 
-
-# --- EXIBIÇÃO DE QUESTÕES ---
+# --- EXIBIÇÃO DAS QUESTÕES ---
 if descritor != "Escolha...":
     st.markdown("<hr />", unsafe_allow_html=True)
     st.subheader("ESCOLHA ATÉ 10 QUESTÕES.")
@@ -207,8 +224,7 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
     if st.button("PREENCHER CABEÇALHO"):
-      st.switch_page("pages/3_AtividadeAMA.py")
-
+        st.switch_page("pages/3_AtividadeAMA.py")
 
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
