@@ -11,6 +11,10 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
+if st.session_state.get("reiniciar_pedido"):
+    st.session_state.clear()
+    st.rerun()
+
 
 # --- BLOQUEIO POR SENHA ---
 if "relatorio_autenticado" not in st.session_state:
