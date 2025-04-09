@@ -10,16 +10,16 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-# 🔄 Redirecionamento seguro ao voltar
+# ✅ Redirecionamento seguro ao voltar para página inicial
 if st.session_state.get("voltar_para_pagina_inicial"):
     st.switch_page("pages/1_Acesso_Professores")
 
-# ⬆️ Flag para evitar cliques duplicados em GERAR ATIVIDADE
+# 🚫 Impede múltiplos cliques no botão GERAR ATIVIDADE
 if "pdf_gerado" not in st.session_state:
     st.session_state.pdf_gerado = False
 
 # ==========================================================
-# 📲 FORMULÁRIO DE CABEÇALHO
+# 📋 FORMULÁRIO DE CABEÇALHO
 # ==========================================================
 st.subheader("Preencha o cabeçalho da atividade:")
 
