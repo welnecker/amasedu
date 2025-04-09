@@ -83,6 +83,8 @@ if gerar_pdf:
             atividades = st.session_state.atividades_exibidas
             codigo_atividade = gerar_codigo_aleatorio()
             st.session_state.codigo_atividade = codigo_atividade
+            st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
+
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             linha_unica = [codigo_atividade, timestamp, sre, escola, turma] + atividades
 
@@ -127,7 +129,6 @@ if gerar_pdf:
 
             if response.status_code == 200:
                 st.session_state.pdf_bytes = response.content
-                st.session_state.pdf_gerado = True
             else:
                 st.error(f"Erro ao gerar PDF: {response.status_code} - {response.text}")
 
