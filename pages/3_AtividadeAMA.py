@@ -10,12 +10,6 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
-# ✅ Redirecionamento seguro ao voltar para página inicial
-if st.session_state.get("voltar_para_pagina_inicial"):
-    st.cache_data.clear()
-    st.session_state.clear()
-    st.switch_page("pages/1_Acesso_Professores")
-
 # 🚫 Impede múltiplos cliques no botão GERAR ATIVIDADE
 if "pdf_gerado" not in st.session_state:
     st.session_state.pdf_gerado = False
@@ -151,9 +145,8 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         mime="application/pdf"
     )
 
-# ❌ Botão sempre visível para reiniciar a qualquer momento
+# ❌ Botão para limpar cache
 with col_cancelar:
-    if st.button("❌ CANCELAR E RECOMEÇAR"):
-        st.session_state["voltar_para_pagina_inicial"] = True
-        st.toast("🔁 Retornando à página inicial...")
-        st.rerun()
+    if st.button("🧹 CANCELAR E LIMPAR CACHE"):
+        st.cache_data.clear()
+        st.toast("🧹 Cache limpo com sucesso!")
