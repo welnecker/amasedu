@@ -172,6 +172,9 @@ with col_cancelar:
         # Mostrar o toast de sucesso
         st.toast("🔁 Cache limpo e página reiniciada!")
 
-        # Forçar o reinício da página
-        st.experimental_rerun()  # Reinicia o app
+        # Forçar reinicialização via session_state
+        st.session_state["reiniciar"] = True  # Adiciona uma chave para forçar o reinício
+
+        # Rerun o app, isso simula a reinicialização
+        st.experimental_rerun()  # Reinicia a página
 
