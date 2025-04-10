@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import unicodedata
-import requests
 import random
 import string
 from google.oauth2.service_account import Credentials
@@ -118,6 +116,7 @@ if gerar_pdf:
                 insertDataOption="INSERT_ROWS",
                 body={"values": [linha_unica]}
             ).execute()
+
             dados_log = {
                 "Escola": escola,
                 "Professor": professor,
@@ -163,11 +162,3 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
         mime="application/pdf"
     )
-
-# ❌ Botão para limpar cache e recarregar a página
-#with col_cancelar:
- #   if st.button("🧹 CANCELAR E LIMPAR CACHE"):
-  #      st.cache_data.clear()
-   #     st.session_state.clear()
-    #    st.toast("🔁 Cache limpo e página reiniciada!")
-     #   st.rerun()
