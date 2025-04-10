@@ -146,3 +146,4 @@ if codigo:
         st.error("A coluna 'CODIGO' não foi encontrada na planilha.")
 else:
     st.info("✏️ **Insira o código da atividade e clique em 'Atualizar Lista' para visualizar os dados.**")
+#

@@ -227,3 +227,4 @@ if id_unico in st.session_state.respostas_salvas:
             st.session_state.pop(f"resp_{idx}", None)
         st.session_state.respostas_salvas.pop(id_unico, None)
         st.rerun()
+        #

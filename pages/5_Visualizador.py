@@ -94,3 +94,4 @@ for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
 
 if df_final.empty:
     st.info("Nenhuma imagem encontrada para os filtros selecionados.")
+#
