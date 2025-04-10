@@ -27,6 +27,7 @@ habilidade = st.session_state.get("habilidade", "")
 descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
+disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -86,7 +87,7 @@ if gerar_pdf:
             st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma] + atividades  # Agora o TIMESTAMP é a primeira coluna (A)
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma] + atividades + [disciplina]  # Agora inclui a DISCIPLINA na última posição
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
@@ -116,7 +117,7 @@ if gerar_pdf:
                 dados_log
             )
 
-            titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.get('disciplina') == 'MATEMATICA' else 'LÍNGUA PORTUGUESA'}"
+            titulo = f"ATIVIDADE DE {'MATEMÁTICA' if disciplina == 'MATEMÁTICA' else 'LÍNGUA PORTUGUESA'}"
             url_api = "https://amasedu.onrender.com/gerar-pdf"
             payload = {
                 "escola": escola,
