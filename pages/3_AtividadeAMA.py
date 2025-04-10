@@ -95,7 +95,7 @@ if gerar_pdf:
             st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma] + atividades + [disciplina]  # Agora inclui a DISCIPLINA na última posição
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
