@@ -33,10 +33,10 @@ professor = st.text_input("Nome do Professor(a):")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
 
-# Garante que os valores dos menus suspensos sejam capturados corretamente
-serie = st.session_state["serie"] if "serie" in st.session_state and st.session_state["serie"] != "Escolha..." else ""
-habilidade = st.session_state["habilidade"] if "habilidade" in st.session_state and st.session_state["habilidade"] != "Escolha..." else ""
-descritor = st.session_state["descritor"] if "descritor" in st.session_state and st.session_state["descritor"] != "Escolha..." else ""
+# Corrigido: captura os valores diretamente do estado e os exibe corretamente
+serie = st.session_state.get("serie", "")
+habilidade = st.session_state.get("habilidade", "")
+descritor = st.session_state.get("descritor", "")
 
 st.text_input("Série:", value=serie, disabled=True)
 st.text_input("Habilidade:", value=habilidade, disabled=True)
