@@ -151,12 +151,8 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 
 # ❌ Botão para limpar cache e recarregar a página
 with col_cancelar:
-    if st.button("CANCELAR E REINICIAR"):
-        st.cache_data.clear()  # Limpar o cache
-        st.session_state.clear()  # Limpar o estado da sessão
+    if st.button("🧹 CANCELAR E LIMPAR CACHE"):
+        st.cache_data.clear()
+        st.session_state.clear()
         st.toast("🔁 Cache limpo e página reiniciada!")
-        
-        # Redirecionar para a página "1_Acesso_Professores.py"
-        st.experimental_rerun()  # Forçar um rerun da página atual
-        st.switch_page("1_Acesso_Professores")  # Navegar para a página desejada
-
+        st.rerun()
