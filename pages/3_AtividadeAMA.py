@@ -83,48 +83,20 @@ with col_gerar:
     gerar_pdf = st.button("📄 GERAR ATIVIDADE", disabled=st.session_state.get("pdf_gerado", False))
 
 if gerar_pdf:
-    # Verificação mínima de preenchimento de campos obrigatórios
     if not escola or not professor:
         st.warning("Preencha todos os campos antes de gerar o PDF.")
         st.stop()
-
-    # Verifica se os dados de série, habilidade e descritor estão disponíveis
-    if not st.session_state.get("serie") or not st.session_state.get("habilidade") or not st.session_state.get("descritor"):
-        st.error("❌ Erro: Série, Habilidade ou Descritor não foram carregados corretamente. Volte e selecione novamente.")
-        st.stop()
-
-    # Recupera os valores do session_state
-    serie = st.session_state["serie"]
-    habilidade = st.session_state["habilidade"]
-    descritor = st.session_state["descritor"]
 
     with st.spinner("Gerando PDF, salvando código e registrando log..."):
         try:
             atividades = st.session_state.atividades_exibidas
             codigo_atividade = gerar_codigo_aleatorio()
             st.session_state.codigo_atividade = codigo_atividade
-            st.session_state.pdf_gerado = True  # Evita duplo clique
+            st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
 
-            # Garante 10 colunas para as atividades
-            atividades_preenchidas = atividades + [""] * (10 - len(atividades))
-
-            # Linha com todos os dados para ATIVIDADES_GERADAS
-            linha_unica = [
-                timestamp,                   # TIMESTAMP
-                codigo_atividade,            # CÓDIGO
-                sre,                         # SRE
-                escola,                      # ESCOLA
-                turma,                       # TURMA
-                serie,                       # SÉRIE
-                habilidade,                  # HABILIDADE
-                descritor,                   # DESCRITOR
-                *atividades_preenchidas,     # ATIVIDADE_1 a ATIVIDADE_10
-                disciplina                   # DISCIPLINA
-            ]
-
-            # Envia para a aba ATIVIDADES_GERADAS
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
@@ -139,7 +111,6 @@ if gerar_pdf:
                 body={"values": [linha_unica]}
             ).execute()
 
-            # Também envia para a aba LOG
             dados_log = {
                 "Escola": escola,
                 "Professor": professor,
@@ -154,7 +125,6 @@ if gerar_pdf:
                 dados_log
             )
 
-            # Geração do PDF via API
             titulo = f"ATIVIDADE DE {'MATEMÁTICA' if disciplina == 'MATEMÁTICA' else 'LÍNGUA PORTUGUESA'}"
             url_api = "https://amasedu.onrender.com/gerar-pdf"
             payload = {
