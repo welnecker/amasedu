@@ -6,11 +6,11 @@ from googleapiclient.discovery import build
 import time
 
 # Definindo senha para proteção
-def autenticar_usuario():
-    senha = st.text_input("Digite a senha:", type="password")
-    if senha != "141267Jdw@":
-        st.warning("Senha incorreta! Tente novamente.")
-        st.stop()
+#def autenticar_usuario():
+ #   senha = st.text_input("Digite a senha:", type="password")
+  #  if senha != "141267Jdw@":
+   #     st.warning("Senha incorreta! Tente novamente.")
+    #    st.stop()
 
 # Função para carregar os dados da planilha
 def carregar_dados_planilha():
