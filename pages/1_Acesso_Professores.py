@@ -250,7 +250,15 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
     if st.button("PREENCHER CABEÇALHO"):
-        st.switch_page("pages/3_AtividadeAMA.py")
+        if st.button("PREENCHER CABEÇALHO"):
+    # Salvar valores no session_state
+         st.session_state["serie"] = serie
+         st.session_state["habilidade"] = habilidade
+         st.session_state["descritor"] = descritor
+
+    st.switch_page("pages/3_AtividadeAMA.py")
+
+    st.switch_page("pages/3_AtividadeAMA.py")
 
 
 
