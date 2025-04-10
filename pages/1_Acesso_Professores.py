@@ -250,11 +250,16 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
 if st.button("PREENCHER CABEÇALHO"):
-    st.session_state["serie"] = st.session_state.get("serie", "")
-    st.session_state["habilidade"] = st.session_state.get("habilidade", "")
-    st.session_state["descritor"] = st.session_state.get("descritor", "")
-    
-    st.switch_page("pages/3_AtividadeAMA.py")
+    # Só certifique que os campos não estão em branco
+    if (
+        st.session_state.get("serie") == "Escolha..." or
+        st.session_state.get("habilidade") == "Escolha..." or
+        st.session_state.get("descritor") == "Escolha..."
+    ):
+        st.warning("⚠️ Preencha todos os campos antes de continuar.")
+    else:
+        # Já estão no session_state via os selectboxes
+        st.switch_page("pages/3_AtividadeAMA.py")
 
 
 
