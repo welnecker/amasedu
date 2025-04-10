@@ -5,13 +5,6 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import time
 
-# Definindo senha para proteção
-#def autenticar_usuario():
- #   senha = st.text_input("Digite a senha:", type="password")
-  #  if senha != "141267Jdw@":
-   #     st.warning("Senha incorreta! Tente novamente.")
-    #    st.stop()
-
 # Função para carregar os dados da planilha
 def carregar_dados_planilha():
     try:
@@ -75,9 +68,6 @@ def exibir_grafico_atividades_por_disciplina(atividades_data):
 # Início do aplicativo
 st.set_page_config(page_title="Monitoramento", page_icon="🔍")
 st.title("📊 Monitoramento de Atividades AMA 2025")
-
-# Verificação de senha
-autenticar_usuario()
 
 # Carregar os dados e gerar gráfico
 atividades_data = carregar_dados_planilha()
