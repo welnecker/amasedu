@@ -115,3 +115,4 @@ if gerar_pdf:
 
         except Exception as e:
             st.error(f"❌ Erro ao gerar PDF ou salvar dados: {e}")
+            #
