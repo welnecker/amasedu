@@ -25,17 +25,18 @@ if "disciplina" not in st.session_state:
     st.session_state.disciplina = disciplina
 else:
     disciplina = st.session_state.disciplina
-    # Exibe a disciplina escolhida como um campo desativado
     st.text_input("Disciplina", value=disciplina, disabled=True)
 
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
-serie = st.session_state.get("serie", "") or st.selectbox("Série:", [""] + ["1º ano", "2º ano", "3º ano"])
-habilidade = st.session_state.get("habilidade", "") or st.text_input("Habilidade:")
-descritor = st.session_state.get("descritor", "") or st.text_input("Descritor:")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
+
+# Série, Habilidade e Descritor desativados, preenchidos com valores do session_state
+serie = st.text_input("Série:", value=st.session_state.get("serie", ""), disabled=True)
+habilidade = st.text_input("Habilidade:", value=st.session_state.get("habilidade", ""), disabled=True)
+descritor = st.text_input("Descritor:", value=st.session_state.get("descritor", ""), disabled=True)
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -92,10 +93,10 @@ if gerar_pdf:
             atividades = st.session_state.atividades_exibidas
             codigo_atividade = gerar_codigo_aleatorio()
             st.session_state.codigo_atividade = codigo_atividade
-            st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
+            st.session_state.pdf_gerado = True
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
