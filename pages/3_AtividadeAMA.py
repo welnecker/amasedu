@@ -95,6 +95,12 @@ if gerar_pdf:
             st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            
+            # Aqui, garantimos que as variáveis de SÉRIE, HABILIDADE e DESCRITOR sejam corretamente atribuídas
+            if not serie or not habilidade or not descritor:
+                st.warning("Preencha todos os campos antes de gerar a atividade.")
+                st.stop()
+
             linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
 
             creds = Credentials.from_service_account_info(
