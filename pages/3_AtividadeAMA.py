@@ -19,6 +19,15 @@ if "pdf_gerado" not in st.session_state:
 # ==========================================================
 st.subheader("Preencha o cabeçalho da atividade:")
 
+# Verifica se a disciplina já foi escolhida, se não, mostra o menu suspenso para selecionar
+if "disciplina" not in st.session_state:
+    disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
+    st.session_state.disciplina = disciplina
+else:
+    disciplina = st.session_state.disciplina
+    # Exibe a disciplina escolhida como um campo desativado
+    st.text_input("Disciplina", value=disciplina, disabled=True)
+
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
@@ -27,7 +36,6 @@ habilidade = st.session_state.get("habilidade", "")
 descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
-disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
