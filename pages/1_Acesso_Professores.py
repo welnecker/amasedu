@@ -175,21 +175,23 @@ if (
     col_serie, col_habilidade, col_descritor = st.columns(3)
 
     serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
-    st.session_state["serie"] = serie
 
     habilidade = col_habilidade.selectbox(
         "**HABILIDADE**",
-        ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
+        ["Escolha..."] + sorted(dados[dados["SERIE"] == st.session_state.serie]["HABILIDADE"].dropna().unique()) if st.session_state.serie != "Escolha..." else [],
         key="habilidade"
     )
-    st.session_state["habilidade"] = habilidade
 
     descritor = col_descritor.selectbox(
         "**DESCRITOR**",
-        ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
+        ["Escolha..."] + sorted(
+            dados[
+                (dados["SERIE"] == st.session_state.serie) & (dados["HABILIDADE"] == st.session_state.habilidade)
+            ]["DESCRITOR"].dropna().unique()
+        ) if st.session_state.habilidade != "Escolha..." else [],
         key="descritor"
     )
-    st.session_state["descritor"] = descritor
+
 else:
     st.info("👈 Antes de escolher as questões, selecione **SRE**, **Escola** e **Turma**.")
     st.stop()
