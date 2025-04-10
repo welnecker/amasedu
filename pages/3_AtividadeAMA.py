@@ -160,29 +160,29 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 # ❌ Botão para limpar cache e recarregar a página
 with col_cancelar:
     if st.button("🧹 CANCELAR E REINICIAR"):
+        # Reabilitar a seleção de disciplina
+        if "disciplina" in st.session_state:
+            del st.session_state["disciplina"]  # Remove a chave 'disciplina' para reabilitar a escolha
+
+        # Mostrar o toast de sucesso
+        st.toast("🔁 Cache limpo e página reiniciada!")
+
         # Limpar o cache de dados
         st.cache_data.clear()
 
         # Limpar o session_state, excluindo todas as variáveis armazenadas
         st.session_state.clear()
 
-        # Remover a chave "disciplina" para permitir nova seleção
-        if "disciplina" in st.session_state:
-            del st.session_state["disciplina"]
-
-        # Mostrar o toast de sucesso
-        st.toast("🔁 Cache limpo e página reiniciada!")
-
         # Forçar reinicialização via session_state
         st.experimental_rerun()  # Reinicia a página
 
 # Verifica se a disciplina já foi escolhida, se não, mostra o menu suspenso para selecionar
 if "disciplina" not in st.session_state:
-    disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
+    disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"], key="disciplina_selectbox")
     st.session_state.disciplina = disciplina
 else:
     disciplina = st.session_state.disciplina
     # Exibe a disciplina escolhida como um campo desativado
-    st.text_input("Disciplina", value=disciplina, disabled=True)
+    st.text_input("Disciplina", value=disciplina, disabled=True, key="disciplina_input")
 
 
