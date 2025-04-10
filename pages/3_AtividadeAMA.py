@@ -160,15 +160,18 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 # ❌ Botão para limpar cache e recarregar a página
 with col_cancelar:
     if st.button("🧹 CANCELAR E REINICIAR"):
-        # Limpar o cache de dados e todas as variáveis de session_state
+        # Limpar o cache de dados
         st.cache_data.clear()
-        st.session_state.clear()  # Limpa todas as chaves do session_state
-        
-        # Redefine os botões de disciplina para permitir nova seleção
-        st.session_state["disciplina"] = ""  # Deixa a chave 'disciplina' vazia para forçar uma nova escolha
-        
+
+        # Limpar o session_state, excluindo todas as variáveis armazenadas
+        st.session_state.clear()
+
+        # Adicionar a disciplina novamente como uma chave vazia (se necessário)
+        st.session_state["disciplina"] = ""
+
+        # Mostrar o toast de sucesso
         st.toast("🔁 Cache limpo e página reiniciada!")
 
-        # Redefine os dados que devem ser carregados novamente, conforme necessário
-        st.experimental_rerun()  # Reinicia a página e recarrega o app
+        # Forçar o reinício da página
+        st.experimental_rerun()  # Reinicia o app
 
