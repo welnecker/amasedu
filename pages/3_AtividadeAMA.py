@@ -31,12 +31,10 @@ else:
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
-serie = st.session_state.get("serie", "")
-habilidade = st.session_state.get("habilidade", "")
-descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
 
+# Carregar os dados das atividades (mesmo que você já tenha feito isso em outro lugar)
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
     st.stop()
@@ -46,6 +44,37 @@ col1, col2 = st.columns(2)
 for i, nome in enumerate(st.session_state.atividades_exibidas):
     with col1 if i % 2 == 0 else col2:
         st.markdown(f"- **Atividade:** {nome}")
+
+# =======================================
+# CARREGAMENTO DOS FILTROS: SÉRIE, HABILIDADE E DESCRITOR
+# =======================================
+if (
+    st.session_state.get("selecionado_sre") != "Escolha..." and
+    st.session_state.get("selecionado_escola") != "Escolha..." and
+    st.session_state.get("selecionado_turma") != "Escolha..."
+):
+    st.markdown("### Escolha Série, Habilidade e Descritor.")
+    col_serie, col_habilidade, col_descritor = st.columns(3)
+
+    serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
+    habilidade = col_habilidade.selectbox("**HABILIDADE**",
+        ["Escolha..."] + sorted(dados[dados["SERIE"] == serie]["HABILIDADE"].dropna().unique()) if serie != "Escolha..." else [],
+        key="habilidade"
+    )
+    descritor = col_descritor.selectbox("**DESCRITOR**",
+        ["Escolha..."] + sorted(dados[(dados["SERIE"] == serie) & (dados["HABILIDADE"] == habilidade)]["DESCRITOR"].dropna().unique()) if habilidade != "Escolha..." else [],
+        key="descritor"
+    )
+
+    # Verifique se as variáveis foram salvas corretamente
+    st.write(f"Série: {serie}, Habilidade: {habilidade}, Descritor: {descritor}")
+
+    st.session_state.serie = serie
+    st.session_state.habilidade = habilidade
+    st.session_state.descritor = descritor
+else:
+    st.info("👈 Antes de escolher as questões, selecione **SRE**, **Escola** e **Turma**.")
+    st.stop()
 
 # ==========================================================
 # 🚀 GERAÇÃO DE PDF E SALVAMENTO
@@ -95,7 +124,8 @@ if gerar_pdf:
             st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
+            # Agora inclui as novas variáveis: série, habilidade e descritor
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
@@ -156,11 +186,3 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
         mime="application/pdf"
     )
-
-# ❌ Botão para limpar cache e recarregar a página
-#with col_cancelar:
- #   if st.button("🧹 CANCELAR E LIMPAR CACHE"):
-  #      st.cache_data.clear()
-   #     st.session_state.clear()
-    #    st.toast("🔁 Cache limpo e página reiniciada!")
-     #   st.rerun()
