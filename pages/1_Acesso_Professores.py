@@ -80,7 +80,7 @@ if botao_matematica:
     st.rerun()
 
 if botao_portugues:
-    st.session_state.disciplina = "PORTUGUES"
+    st.session_state.disciplina = "LINGUA PORTUGUESA"
     st.rerun()
 
 if not st.session_state.disciplina:
@@ -137,7 +137,7 @@ else:
 # --- CARREGAMENTO DE DADOS DAS QUESTÕES ---
 GIDS = {
     "MATEMATICA": "2127889637",
-    "PORTUGUES": "1217179376"
+    "LINGUA PORTUGUESA": "1217179376"
 }
 URL_PLANILHA_QUESTOES = f"https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid={GIDS[st.session_state.disciplina]}&single=true&output=csv"
 
