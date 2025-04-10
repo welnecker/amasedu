@@ -19,15 +19,6 @@ if "pdf_gerado" not in st.session_state:
 # ==========================================================
 st.subheader("Preencha o cabeçalho da atividade:")
 
-# Verifica se a disciplina já foi escolhida, se não, mostra o menu suspenso para selecionar
-if "disciplina" not in st.session_state:
-    disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
-    st.session_state.disciplina = disciplina
-else:
-    disciplina = st.session_state.disciplina
-    # Exibe a disciplina escolhida como um campo desativado
-    st.text_input("Disciplina", value=disciplina, disabled=True)
-
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
@@ -36,6 +27,7 @@ habilidade = st.session_state.get("habilidade", "")
 descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
+disciplina = st.selectbox("Escolha a disciplina:", ["MATEMÁTICA", "LÍNGUA PORTUGUESA"])
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -159,8 +151,12 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
 
 # ❌ Botão para limpar cache e recarregar a página
 with col_cancelar:
-    if st.button("🧹 CANCELAR E LIMPAR CACHE"):
-        st.cache_data.clear()
-        st.session_state.clear()
+    if st.button("CANCELAR E REINICIAR"):
+        st.cache_data.clear()  # Limpar o cache
+        st.session_state.clear()  # Limpar o estado da sessão
         st.toast("🔁 Cache limpo e página reiniciada!")
-        st.rerun()
+        
+        # Redirecionar para a página "1_Acesso_Professores.py"
+        st.experimental_rerun()  # Forçar um rerun da página atual
+        st.switch_page("1_Acesso_Professores")  # Navegar para a página desejada
+
