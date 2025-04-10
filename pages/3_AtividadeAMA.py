@@ -31,11 +31,18 @@ else:
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
+
+# Captura dos valores para Série, Habilidade e Descritor
 serie = st.session_state.get("serie", "")
 habilidade = st.session_state.get("habilidade", "")
 descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
+
+# Garantindo que esses dados estão sendo salvos
+st.session_state.serie = serie
+st.session_state.habilidade = habilidade
+st.session_state.descritor = descritor
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -95,7 +102,8 @@ if gerar_pdf:
             st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
+            # Incluindo as variáveis de Série, Habilidade e Descritor na linha de dados
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
@@ -110,7 +118,6 @@ if gerar_pdf:
                 insertDataOption="INSERT_ROWS",
                 body={"values": [linha_unica]}
             ).execute()
-
             dados_log = {
                 "Escola": escola,
                 "Professor": professor,
