@@ -41,7 +41,33 @@ def exibir_grafico_atividades_por_disciplina(atividades_data):
         atividades_por_disciplina = df_atividades["DISCIPLINA"].value_counts()
         
         # Exibir gráfico de colunas
-        fig = px.bar(atividades_por_disciplina, title="Quantidade de Atividades Geradas por Disciplina", labels={'index': 'Disciplina', 'value': 'Quantidade'})
+        fig = px.bar(atividades_por_disciplina, 
+                     title="Quantidade de Atividades Geradas por Disciplina", 
+                     labels={'index': 'Disciplina', 'value': 'Quantidade'})
+        
+        # Atualizando o layout do gráfico
+        fig.update_layout(
+            yaxis_visible=False,  # Remover eixo Y
+            xaxis_title='',  # Remover título do eixo X
+            yaxis_title='',  # Remover título do eixo Y
+            showlegend=False,  # Remover a legenda
+            plot_bgcolor='white',  # Remover o fundo de grade
+            xaxis=dict(showgrid=False),  # Remover a grade
+            margin=dict(t=40, b=40, l=40, r=40)  # Ajuste nas margens
+        )
+        
+        # Adicionar o número de atividades no topo de cada barra
+        for i, value in enumerate(atividades_por_disciplina):
+            fig.add_annotation(
+                x=i,
+                y=value,
+                text=str(value),
+                showarrow=False,
+                font=dict(size=12, color='black'),
+                align='center',
+                yshift=10  # Ajuste a distância do topo da barra
+            )
+        
         st.plotly_chart(fig)
     else:
         st.warning("A coluna 'DISCIPLINA' não foi encontrada nos dados.")
