@@ -158,9 +158,9 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
     )
 
 # ❌ Botão para limpar cache e recarregar a página
-with col_cancelar:
-    if st.button("🧹 CANCELAR E LIMPAR CACHE"):
-        st.cache_data.clear()
-        st.session_state.clear()
-        st.toast("🔁 Cache limpo e página reiniciada!")
-        st.rerun()
+#with col_cancelar:
+ #   if st.button("🧹 CANCELAR E LIMPAR CACHE"):
+  #      st.cache_data.clear()
+   #     st.session_state.clear()
+    #    st.toast("🔁 Cache limpo e página reiniciada!")
+     #   st.rerun()
