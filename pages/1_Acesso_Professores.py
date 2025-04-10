@@ -166,6 +166,7 @@ if "atividades_exibidas" not in st.session_state:
     st.session_state.atividades_exibidas = []
 
 # --- FILTROS ---
+# --- FILTROS ---
 if (
     st.session_state.get("selecionado_sre") != "Escolha..." and
     st.session_state.get("selecionado_escola") != "Escolha..." and
@@ -174,27 +175,33 @@ if (
     st.markdown("### Escolha Série, Habilidade e Descritor.")
     col_serie, col_habilidade, col_descritor = st.columns(3)
 
-    serie = col_serie.selectbox("**SÉRIE**", ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()), key="serie")
+    col_serie.selectbox(
+        "**SÉRIE**",
+        ["Escolha..."] + sorted(dados["SERIE"].dropna().unique()),
+        key="serie"
+    )
 
-    habilidade = col_habilidade.selectbox(
+    col_habilidade.selectbox(
         "**HABILIDADE**",
-        ["Escolha..."] + sorted(dados[dados["SERIE"] == st.session_state.serie]["HABILIDADE"].dropna().unique()) if st.session_state.serie != "Escolha..." else [],
+        ["Escolha..."] + sorted(dados[dados["SERIE"] == st.session_state["serie"]]["HABILIDADE"].dropna().unique())
+        if st.session_state["serie"] != "Escolha..." else [],
         key="habilidade"
     )
 
-    descritor = col_descritor.selectbox(
+    col_descritor.selectbox(
         "**DESCRITOR**",
         ["Escolha..."] + sorted(
             dados[
-                (dados["SERIE"] == st.session_state.serie) & (dados["HABILIDADE"] == st.session_state.habilidade)
+                (dados["SERIE"] == st.session_state["serie"]) &
+                (dados["HABILIDADE"] == st.session_state["habilidade"])
             ]["DESCRITOR"].dropna().unique()
-        ) if st.session_state.habilidade != "Escolha..." else [],
+        ) if st.session_state["habilidade"] != "Escolha..." else [],
         key="descritor"
     )
-
 else:
     st.info("👈 Antes de escolher as questões, selecione **SRE**, **Escola** e **Turma**.")
     st.stop()
+
 
 # --- EXIBIÇÃO DAS QUESTÕES ---
 if descritor != "Escolha...":
