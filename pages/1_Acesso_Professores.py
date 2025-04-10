@@ -250,15 +250,15 @@ if descritor != "Escolha...":
                 st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
 
 if st.button("PREENCHER CABEÇALHO"):
-    # Verificar se os campos foram preenchidos corretamente
     if (
         st.session_state.get("serie") == "Escolha..." or
         st.session_state.get("habilidade") == "Escolha..." or
         st.session_state.get("descritor") == "Escolha..."
     ):
-        st.warning("⚠️ Preencha SÉRIE, HABILIDADE e DESCRITOR antes de continuar.")
+        st.warning("⚠️ Preencha todos os campos antes de continuar.")
     else:
         st.switch_page("pages/3_AtividadeAMA.py")
+
 
 
 
