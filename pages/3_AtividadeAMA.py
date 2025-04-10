@@ -34,9 +34,10 @@ sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
 
 # Recupera valores diretamente do session_state para evitar campos em branco
-serie = st.session_state.get("serie", "")
-habilidade = st.session_state.get("habilidade", "")
-descritor = st.session_state.get("descritor", "")
+serie = st.session_state.serie if "serie" in st.session_state else ""
+habilidade = st.session_state.habilidade if "habilidade" in st.session_state else ""
+descritor = st.session_state.descritor if "descritor" in st.session_state else ""
+
 
 # Exibe os campos como desabilitados com os valores recuperados
 st.text_input("Série:", value=serie, disabled=True)
