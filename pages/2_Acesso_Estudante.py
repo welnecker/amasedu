@@ -14,11 +14,6 @@ st.subheader("Preencha seus dados abaixo:")
 if "nome_estudante" not in st.session_state:
     st.session_state.nome_estudante = ""
 
-if not st.session_state.get("atividades_em_exibicao"):
-    st.session_state.nome_estudante = st.text_input("Nome do(a) Estudante:")
-else:
-    st.text_input("Nome do(a) Estudante:", value=st.session_state.nome_estudante, disabled=True)
-
 st.subheader("Digite abaixo o código fornecido pelo(a) professor(a):")
 codigo_atividade = st.text_input("Código da atividade (ex: ABC123):").strip().upper()
 
@@ -76,6 +71,9 @@ def carregar_atividades():
     except Exception as e:
         st.error(f"Erro ao carregar atividades: {e}")
         return pd.DataFrame(columns=["CODIGO"])
+
+# Restante do código para envio de respostas
+
 
 @st.cache_data(show_spinner=False)
 def carregar_gabarito():
