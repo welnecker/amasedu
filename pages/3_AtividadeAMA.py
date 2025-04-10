@@ -33,10 +33,15 @@ professor = st.text_input("Nome do Professor(a):")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
 
-# Série, Habilidade e Descritor desativados, preenchidos com valores do session_state
-serie = st.text_input("Série:", value=st.session_state.get("serie", ""), disabled=True)
-habilidade = st.text_input("Habilidade:", value=st.session_state.get("habilidade", ""), disabled=True)
-descritor = st.text_input("Descritor:", value=st.session_state.get("descritor", ""), disabled=True)
+# Recupera valores diretamente do session_state para evitar campos em branco
+serie = st.session_state.get("serie", "")
+habilidade = st.session_state.get("habilidade", "")
+descritor = st.session_state.get("descritor", "")
+
+# Exibe os campos como desabilitados com os valores recuperados
+st.text_input("Série:", value=serie, disabled=True)
+st.text_input("Habilidade:", value=habilidade, disabled=True)
+st.text_input("Descritor:", value=descritor, disabled=True)
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -62,7 +67,7 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         dados_log["Escola"],
         dados_log["Professor"],
-        dados_log["Série"],
+        dados_log["Serie"],
         dados_log["Habilidades"],
         dados_log["Descritor"],
         dados_log["TotalQuestoes"]
@@ -115,7 +120,7 @@ if gerar_pdf:
             dados_log = {
                 "Escola": escola,
                 "Professor": professor,
-                "Série": serie,
+                "Serie": serie,
                 "Habilidades": habilidade,
                 "Descritor": descritor,
                 "TotalQuestoes": len(atividades)
