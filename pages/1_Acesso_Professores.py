@@ -258,6 +258,7 @@ if st.button("PREENCHER CABEÇALHO"):
         st.warning("⚠️ Preencha todos os campos antes de continuar.")
     else:
         st.switch_page("pages/3_AtividadeAMA.py")
+        #
 
 
 
