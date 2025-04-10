@@ -168,7 +168,7 @@ with col_cancelar:
         st.session_state["disciplina"] = ""  # Deixa a chave 'disciplina' vazia para forçar uma nova escolha
         
         st.toast("🔁 Cache limpo e página reiniciada!")
-        
-        # Redirecionar para a página inicial (1_Acesso_Professores.py)
-        st.experimental_rerun()  # Esta função reinicia o aplicativo, forçando a reinicialização da página
+
+        # Redefine os dados que devem ser carregados novamente, conforme necessário
+        st.experimental_rerun()  # Reinicia a página e recarrega o app
 
