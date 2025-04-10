@@ -25,17 +25,22 @@ if "disciplina" not in st.session_state:
     st.session_state.disciplina = disciplina
 else:
     disciplina = st.session_state.disciplina
-    # Exibe a disciplina escolhida como um campo desativado
     st.text_input("Disciplina", value=disciplina, disabled=True)
 
 escola = st.text_input("Escola:", value=st.session_state.get("selecionado_escola", ""))
 data = st.date_input("Data:", value=datetime.today())
 professor = st.text_input("Nome do Professor(a):")
-serie = st.session_state.get("serie", "")
-habilidade = st.session_state.get("habilidade", "")
-descritor = st.session_state.get("descritor", "")
 sre = st.session_state.get("selecionado_sre", "")
 turma = st.session_state.get("selecionado_turma", "")
+
+# Garante que os valores dos menus suspensos sejam capturados corretamente
+serie = st.session_state["serie"] if "serie" in st.session_state and st.session_state["serie"] != "Escolha..." else ""
+habilidade = st.session_state["habilidade"] if "habilidade" in st.session_state and st.session_state["habilidade"] != "Escolha..." else ""
+descritor = st.session_state["descritor"] if "descritor" in st.session_state and st.session_state["descritor"] != "Escolha..." else ""
+
+st.text_input("Série:", value=serie, disabled=True)
+st.text_input("Habilidade:", value=habilidade, disabled=True)
+st.text_input("Descritor:", value=descritor, disabled=True)
 
 if "atividades_exibidas" not in st.session_state or not st.session_state.atividades_exibidas:
     st.warning("Nenhuma atividade selecionada. Volte e escolha as atividades.")
@@ -61,7 +66,7 @@ def registrar_log_google_sheets(secrets, spreadsheet_id, dados_log):
         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         dados_log["Escola"],
         dados_log["Professor"],
-        dados_log["Série"],
+        dados_log["Serie"],
         dados_log["Habilidades"],
         dados_log["Descritor"],
         dados_log["TotalQuestoes"]
@@ -92,10 +97,10 @@ if gerar_pdf:
             atividades = st.session_state.atividades_exibidas
             codigo_atividade = gerar_codigo_aleatorio()
             st.session_state.codigo_atividade = codigo_atividade
-            st.session_state.pdf_gerado = True  # <- DESABILITA O BOTÃO IMEDIATAMENTE
+            st.session_state.pdf_gerado = True
 
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]  # Agora inclui as novas colunas
+            linha_unica = [timestamp, codigo_atividade, sre, escola, turma, serie, habilidade, descritor] + atividades + [disciplina]
 
             creds = Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
@@ -114,7 +119,7 @@ if gerar_pdf:
             dados_log = {
                 "Escola": escola,
                 "Professor": professor,
-                "Série": serie,
+                "Serie": serie,
                 "Habilidades": habilidade,
                 "Descritor": descritor,
                 "TotalQuestoes": len(atividades)
@@ -156,11 +161,3 @@ if "codigo_atividade" in st.session_state and "pdf_bytes" in st.session_state:
         file_name=f"{professor}_{data.strftime('%Y-%m-%d')}.pdf",
         mime="application/pdf"
     )
-
-# ❌ Botão para limpar cache e recarregar a página
-#with col_cancelar:
- #   if st.button("🧹 CANCELAR E LIMPAR CACHE"):
-  #      st.cache_data.clear()
-   #     st.session_state.clear()
-    #    st.toast("🔁 Cache limpo e página reiniciada!")
-     #   st.rerun()
