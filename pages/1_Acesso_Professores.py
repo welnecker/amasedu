@@ -1,4 +1,3 @@
-# 1_Acesso_Professores.py
 import streamlit as st
 import pandas as pd
 import requests
@@ -11,10 +10,17 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
+
+# Sempre visível botão "Recomeçar tudo"
+if st.button("Recomeçar tudo"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.cache_data.clear()  # limpa o cache de dados da planilha
+    st.rerun()
+
 if st.session_state.get("reiniciar_pedido"):
     st.session_state.clear()
     st.rerun()
-
 
 # --- BLOQUEIO POR SENHA ---
 if "relatorio_autenticado" not in st.session_state:
@@ -205,42 +211,4 @@ if descritor != "Escolha...":
             if st.button(f"Selecionar tudo ({nivel_titulo})", key=f"select_all_{nivel_nome}"):
                 for nome_atividade in resultados:
                     if nome_atividade not in st.session_state.atividades_exibidas and len(st.session_state.atividades_exibidas) < 10:
-                        st.session_state.atividades_exibidas.append(nome_atividade)
-                st.rerun()
-
-            for idx, nome_atividade in enumerate(resultados):
-                checkbox_key = f"chk_{nivel_nome}_{idx}"
-                checked = nome_atividade in st.session_state.atividades_exibidas
-                disabled = not checked and len(st.session_state.atividades_exibidas) >= 10
-
-                if st.checkbox(nome_atividade, key=checkbox_key, value=checked, disabled=disabled):
-                    if nome_atividade not in st.session_state.atividades_exibidas and len(st.session_state.atividades_exibidas) < 10:
-                        st.session_state.atividades_exibidas.append(nome_atividade)
-                elif nome_atividade in st.session_state.atividades_exibidas:
-                    st.session_state.atividades_exibidas.remove(nome_atividade)
-
-    total = len(st.session_state.atividades_exibidas)
-    st.progress(total / 10 if total <= 10 else 1.0)
-    st.info(f"{total}/10 atividades escolhidas. Role a página para baixo.")
-
-    if total >= 10:
-        st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
-
-    if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, nome in enumerate(st.session_state.atividades_exibidas):
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
-
-    if st.button("PREENCHER CABEÇALHO"):
-        st.switch_page("pages/3_AtividadeAMA.py")
-
-if st.button("Recomeçar tudo"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.cache_data.clear()  # limpa o cache de dados da planilha
-    st.rerun()
-
+                        st.session_state.atividades
