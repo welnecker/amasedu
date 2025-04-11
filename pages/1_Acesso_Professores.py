@@ -1,4 +1,3 @@
-# 1_Acesso_Professores.py
 import streamlit as st
 import pandas as pd
 import requests
@@ -15,6 +14,10 @@ if st.session_state.get("reiniciar_pedido"):
     st.session_state.clear()
     st.rerun()
 
+# Inicializa campos críticos de sessão (garantia de persistência correta)
+for campo in ["serie", "habilidade", "descritor"]:
+    if campo not in st.session_state:
+        st.session_state[campo] = None
 
 # --- BLOQUEIO POR SENHA ---
 if "relatorio_autenticado" not in st.session_state:
@@ -87,7 +90,6 @@ if not st.session_state.disciplina:
     st.warning("Selecione uma disciplina para continuar.")
     st.stop()
 
-# Mensagem de confirmação com destaque visual
 st.markdown(
     f"<div style='padding:10px; background-color:#dff0d8; border-radius:10px;'><b>✅ Disciplina selecionada:</b> {st.session_state.disciplina}</div>",
     unsafe_allow_html=True
@@ -96,7 +98,7 @@ st.markdown(
 if st.button("Recomeçar tudo"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.cache_data.clear()  # limpa o cache de dados da planilha
+    st.cache_data.clear()
     st.rerun()
 
 # --- CARREGAMENTO DE BASE_SEGES ---
