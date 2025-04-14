@@ -235,14 +235,18 @@ if descritor != "Escolha...":
     if total >= 10:
         st.warning("10 Questões atingidas! Clique em PREENCHER CABEÇALHO ou Recomeçar tudo.")
 
-    if st.session_state.atividades_exibidas:
-        st.markdown("<hr />", unsafe_allow_html=True)
-        st.success("Links das atividades selecionadas:")
-        col1, col2 = st.columns(2)
-        for count, nome in enumerate(st.session_state.atividades_exibidas):
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
-            with col1 if count % 2 == 0 else col2:
-                st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
+if st.session_state.atividades_exibidas:
+    st.markdown("<hr />", unsafe_allow_html=True)
+    st.success("Links das atividades selecionadas:")
+    col1, col2 = st.columns(2)
+
+    disciplina = st.session_state.get("disciplina", "").lower()
+
+    for count, nome in enumerate(st.session_state.atividades_exibidas):
+        url_img = f"https://questoesama.pages.dev/{disciplina}/{nome}.jpg"
+        with col1 if count % 2 == 0 else col2:
+            st.markdown(f"[Visualize esta atividade.]({url_img})", unsafe_allow_html=True)
+
 
 if st.button("PREENCHER CABEÇALHO"):
     # ✅ Garante que os dados estejam no session_state antes da troca de página
