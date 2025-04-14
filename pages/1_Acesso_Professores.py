@@ -93,11 +93,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-if st.button("Recomeçar tudo"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.cache_data.clear()  # limpa o cache de dados da planilha
-    st.rerun()
+col_esquerda, col_direita = st.columns([4, 1])
+with col_direita:
+    if st.button("🔄 Recomeçar tudo"):
+        st.session_state.clear()
+        st.cache_data.clear()
+        st.rerun()
+
 
 # --- CARREGAMENTO DE BASE_SEGES ---
 URL_BASE_SEGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=340515451&single=true&output=csv"
