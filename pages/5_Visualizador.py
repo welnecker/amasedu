@@ -82,11 +82,15 @@ st.markdown("---")
 st.markdown(f"### Imagens para o descritor `{descritor_opcao}` - Nível `{nivel_opcao}`")
 
 col1, col2 = st.columns(2)
+
+# Define pasta de acordo com a disciplina
+pasta = "matematica" if disciplina == "MATEMATICA" else "portugues"
+
 for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
-    url = f"https://raw.githubusercontent.com/welnecker/questoesama/main/{atividade}.jpg"
+    url = f"https://questoesama.pages.dev/{pasta}/{atividade}.jpg"
     with col1 if i % 2 == 0 else col2:
         with st.container():
-            st.image(url, caption=atividade, use_container_width=True)
+            st.image(url, caption=f"{atividade}", use_container_width=True)
             st.markdown(
                 f'<a href="{url}" target="_blank" style="text-decoration:none; font-size:18px;">🔍</a>',
                 unsafe_allow_html=True
@@ -94,4 +98,3 @@ for i, atividade in enumerate(df_final["ATIVIDADE"].dropna().unique()):
 
 if df_final.empty:
     st.info("Nenhuma imagem encontrada para os filtros selecionados.")
-#
