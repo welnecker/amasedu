@@ -61,14 +61,7 @@ def carregar_atividades():
             return pd.DataFrame(columns=["CODIGO"])
 
         header = [col.strip().upper() for col in values[0]]
-        rows = []
-        for row in values[1:]:
-            if len(row) < len(header):
-                row += [None] * (len(header) - len(row))
-            elif len(row) > len(header):
-                row = row[:len(header)]
-            rows.append(row)
-
+        rows = [row + [None] * (len(header) - len(row)) for row in values[1:]]
         df = pd.DataFrame(rows, columns=header)
         df["CODIGO"] = df["CODIGO"].astype(str).str.strip().str.upper()
         return df
@@ -123,7 +116,7 @@ codigo_valido = not linha_codigo.empty
 if id_unico in st.session_state.respostas_enviadas:
     st.warning("❌ Você já fez a atividade com esse código.")
 else:
-    if st.button("📅 Gerar Atividade") and not st.session_state.get("atividades_em_exibicao"):
+    if st.button("🗕️ Gerar Atividade") and not st.session_state.get("atividades_em_exibicao"):
         if not all([st.session_state.nome_estudante.strip(), codigo_atividade.strip()]):
             st.warning("⚠️ Por favor, preencha todos os campos.")
             st.stop()
@@ -149,9 +142,13 @@ if st.session_state.get("atividades_em_exibicao"):
     ja_respondeu = id_unico in st.session_state.respostas_enviadas
     respostas = {}
 
+    disciplina = linha["DISCIPLINA"].values[0] if "DISCIPLINA" in linha.columns else "matematica"
+    disciplina = disciplina.lower()
+
     for idx, atividade in enumerate(atividades):
-        url = f"https://questoesama.pages.dev/{atividade}.jpg"
-        st.image(url, caption=f"Atividade {idx + 1}", use_container_width=True)
+        st.markdown(f"### Questão {idx + 1}")
+        url = f"https://questoesama.pages.dev/{disciplina}/{atividade}.jpg"
+        st.image(url, use_container_width=True)
 
         if ja_respondeu:
             resposta_salva = st.session_state.respostas_salvas.get(id_unico, {}).get(atividade, "❓")
@@ -192,7 +189,6 @@ if st.session_state.get("atividades_em_exibicao"):
                     acertos_detalhe[atividade] = situacao
                     linha_envio.extend([atividade, resposta, situacao])
 
-                # Selecionar conta aleatória do secrets
                 contas = st.secrets["gcp_service_accounts"]
                 todas_credenciais = [contas["cred1"], contas["cred2"], contas["cred3"]]
                 cred = escolher_credencial_aleatoria(todas_credenciais)
@@ -218,7 +214,7 @@ if id_unico in st.session_state.respostas_salvas:
         for idx, atividade in enumerate(atividades):
             situacao = acertos_detalhe.get(atividade, "❓")
             cor = "✅" if situacao == "Certo" else "❌"
-            st.markdown(f"**Atividade {idx+1}:** {cor}")
+            st.markdown(f"**Questão {idx+1}:** {cor}")
 
     st.markdown("---")
     if st.button("🔄 Limpar Atividade"):
@@ -227,4 +223,3 @@ if id_unico in st.session_state.respostas_salvas:
             st.session_state.pop(f"resp_{idx}", None)
         st.session_state.respostas_salvas.pop(id_unico, None)
         st.rerun()
-        #
