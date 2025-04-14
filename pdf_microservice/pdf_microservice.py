@@ -58,9 +58,10 @@ async def gerar_pdf(req: PDFRequest):
                         pagina = pdf.new_page()
                         y = 10
 
-                    pagina.insert_text(fitz.Point(72, y),
-                                       f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
-                    y += 22
+                    y += 12  # espaço antes do título da nova questão
+                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
+                    y += 22  # espaço após o título antes da imagem
+
 
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
