@@ -7,15 +7,45 @@ from PIL import Image
 import urllib.request
 from io import BytesIO
 from datetime import datetime
+import pandas as pd
 
 app = FastAPI()
 
 class PDFRequest(BaseModel):
     escola: str
     professor: str
-    data: str
+    data: str  # formato: "YYYY-MM-DD"
     atividades: List[str]
     titulo: str = "ATIVIDADE"
+
+# Função auxiliar para buscar o gabarito correto da atividade
+
+def buscar_gabarito(atividades: List[str]) -> List[str]:
+    try:
+        # Planilha compartilhada com abas MATEMATICA e PORTUGUES
+        url_mat = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=2127889637&single=true&output=csv"
+        url_por = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1IMZCz0xYYNGiEIlrqzvsELrjozHr32CNYHdcHzVqYWwDUFolet_2XOxv4EX7Tu3vxOB4w-YUX9/pub?gid=1217179376&single=true&output=csv"
+
+        df_mat = pd.read_csv(url_mat)
+        df_por = pd.read_csv(url_por)
+        df = pd.concat([df_mat, df_por], ignore_index=True)
+
+        df["ATIVIDADE"] = df["ATIVIDADE"].astype(str).str.strip()
+        df["GABARITO"] = df["GABARITO"].astype(str).str.strip().str.upper()
+
+        lista = []
+        for i, atividade in enumerate(atividades, start=1):
+            letra = df[df["ATIVIDADE"] == atividade]["GABARITO"].values
+            if letra.any():
+                lista.append(f"{i} - {letra[0]}")
+            else:
+                lista.append(f"{i} - ?")
+
+        return lista
+
+    except:
+        return [f"{i} - ?" for i in range(1, len(atividades)+1)]
+
 
 @app.post("/gerar-pdf")
 async def gerar_pdf(req: PDFRequest):
@@ -56,26 +86,43 @@ async def gerar_pdf(req: PDFRequest):
 
                     if y > 700:
                         pagina = pdf.new_page()
-                        y = 50  # margem superior da nova página
+                        y = 50
                     else:
-                        y += 12  # margem entre imagens
+                        y += 12
 
-                    # Questão N
-                    pagina.insert_text(fitz.Point(72, y),
-                                       f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
+                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
                     y += 22
 
-                    # Imagem
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
                         stream=buffer.getvalue()
                     )
                     y += 162
-
             except:
                 continue
 
-        # Finaliza PDF
+        # Insere imagem do gabarito em branco
+        pagina = pdf.new_page()
+        try:
+            url_gabarito = "https://questoesama.pages.dev/img/gabarito-preencher.jpg"
+            req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req_img) as resp:
+                img = Image.open(BytesIO(resp.read())).convert("RGB")
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG')
+
+                pagina.insert_image(fitz.Rect(72, 60, 520, 760), stream=buffer.getvalue())
+        except:
+            pass
+
+        # Insere gabarito correto como texto na página seguinte
+        gabarito_lista = buscar_gabarito(req.atividades)
+        pagina = pdf.new_page()
+        pagina.insert_text(fitz.Point(72, 60), "GABARITO", fontsize=14, fontname="helv", color=(0, 0, 0))
+
+        for idx, linha in enumerate(gabarito_lista):
+            pagina.insert_text(fitz.Point(72, 90 + idx * 20), linha, fontsize=12, fontname="helv", color=(0, 0, 0))
+
         pdf_bytes = pdf.write()
         pdf_stream = BytesIO(pdf_bytes)
         nome_arquivo = f"{req.professor}_{req.data}.pdf"
