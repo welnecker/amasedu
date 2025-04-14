@@ -60,7 +60,7 @@ async def gerar_pdf(req: PDFRequest):
 
                     pagina.insert_text(fitz.Point(72, y),
                                        f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
-                    y += 15
+                    y += 22
 
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
