@@ -13,7 +13,7 @@ app = FastAPI()
 class PDFRequest(BaseModel):
     escola: str
     professor: str
-    data: str  # formato: "YYYY-MM-DD"
+    data: str
     atividades: List[str]
     titulo: str = "ATIVIDADE"
 
@@ -56,22 +56,26 @@ async def gerar_pdf(req: PDFRequest):
 
                     if y > 700:
                         pagina = pdf.new_page()
-                        y = 10
+                        y = 50  # margem superior da nova página
+                    else:
+                        y += 12  # margem entre imagens
 
-                    y += 12  # espaço antes do título da nova questão
-                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
-                    y += 22  # espaço após o título antes da imagem
+                    # Questão N
+                    pagina.insert_text(fitz.Point(72, y),
+                                       f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
+                    y += 22
 
-
+                    # Imagem
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
                         stream=buffer.getvalue()
                     )
                     y += 162
+
             except:
                 continue
 
-        # Finaliza o PDF
+        # Finaliza PDF
         pdf_bytes = pdf.write()
         pdf_stream = BytesIO(pdf_bytes)
         nome_arquivo = f"{req.professor}_{req.data}.pdf"
