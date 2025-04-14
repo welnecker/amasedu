@@ -16,7 +16,6 @@ class PDFRequest(BaseModel):
     data: str
     atividades: List[str]
     titulo: str = "ATIVIDADE"
-    gabarito: List[str] = []  # Lista como ["1-A", "2-C", ...]
 
 @app.post("/gerar-pdf")
 async def gerar_pdf(req: PDFRequest):
@@ -44,7 +43,7 @@ async def gerar_pdf(req: PDFRequest):
         pagina.insert_text(fitz.Point(posicao_x, 160),
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
-        # Imagens das questões
+        # Imagens
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{nome}.jpg"
@@ -57,52 +56,24 @@ async def gerar_pdf(req: PDFRequest):
 
                     if y > 700:
                         pagina = pdf.new_page()
-                        y = 50
+                        y = 50  # margem superior da nova página
                     else:
-                        y += 12
+                        y += 12  # margem entre imagens
 
-                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
+                    # Questão N
+                    pagina.insert_text(fitz.Point(72, y),
+                                       f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
                     y += 22
 
+                    # Imagem
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
                         stream=buffer.getvalue()
                     )
                     y += 162
+
             except:
                 continue
-
-        # Adiciona imagem do gabarito em branco
-        try:
-            url_gabarito = "https://questoesama.pages.dev/img/gabarito_modelo.jpg"
-            req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_img) as resp:
-                img = Image.open(BytesIO(resp.read())).convert("RGB")
-                buffer = BytesIO()
-                img.save(buffer, format='JPEG')
-
-                if y > 700:
-                    pagina = pdf.new_page()
-                    y = 50
-                else:
-                    y += 20
-
-                pagina.insert_text(fitz.Point(72, y), "Gabarito a preencher:", fontsize=12, fontname="helv", color=(0, 0, 0))
-                y += 22
-
-                pagina.insert_image(fitz.Rect(72, y, 520, y + 160), stream=buffer.getvalue())
-        except:
-            pass
-
-        # Nova página para gabarito preenchido
-        pdf.new_page()
-        y_gab = 50
-        pagina = pdf[-1]
-        pagina.insert_text(fitz.Point(72, y_gab), "Gabarito para correção:", fontsize=12, fontname="helv", color=(0, 0, 0))
-        y_gab += 20
-        for linha in req.gabarito:
-            pagina.insert_text(fitz.Point(72, y_gab), linha, fontsize=12, fontname="helv", color=(0, 0, 0))
-            y_gab += 18
 
         # Finaliza PDF
         pdf_bytes = pdf.write()
