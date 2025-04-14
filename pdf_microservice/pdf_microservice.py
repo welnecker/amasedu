@@ -65,16 +65,16 @@ async def gerar_pdf(req: PDFRequest):
                     y += 22
 
                     pagina.insert_image(
-                        fitz.Rect(72, y, 520, y + 240),  # imagem maior
+                        fitz.Rect(72, y, 520, y + 160),
                         stream=buffer.getvalue()
                     )
-                    y += 245
+                    y += 162
             except:
                 continue
 
         # Adiciona imagem do gabarito em branco
         try:
-            url_gabarito = "https://questoesama.pages.dev/img/gabarito-preencher.jpg"
+            url_gabarito = "https://questoesama.pages.dev/img/gabarito_modelo.jpg"
             req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req_img) as resp:
                 img = Image.open(BytesIO(resp.read())).convert("RGB")
@@ -90,7 +90,7 @@ async def gerar_pdf(req: PDFRequest):
                 pagina.insert_text(fitz.Point(72, y), "Gabarito a preencher:", fontsize=12, fontname="helv", color=(0, 0, 0))
                 y += 22
 
-                pagina.insert_image(fitz.Rect(72, y, 520, y + 240), stream=buffer.getvalue())
+                pagina.insert_image(fitz.Rect(72, y, 520, y + 160), stream=buffer.getvalue())
         except:
             pass
 
