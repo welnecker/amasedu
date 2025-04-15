@@ -128,7 +128,7 @@ if gerar_pdf:
                 dados_log
             )
 
-            titulo = f"ATIVIDADE DE {'MATEMÁTICA' if disciplina == 'MATEMÁTICA' else 'LÍNGUA PORTUGUESA'}"
+            titulo = f"ATIVIDADE DE {'MATEMÁTICA' if st.session_state.disciplina == 'MATEMÁTICA' else 'LÍNGUA PORTUGUESA'}"
             url_api = "https://amasedu.onrender.com/gerar-pdf"
             payload = {
                 "escola": escola,
