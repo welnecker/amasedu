@@ -101,7 +101,7 @@ async def gerar_pdf(req: PDFRequest):
                 pagina.insert_text(fitz.Point(72, 40), "GABARITO",
                                    fontsize=12, fontname="helv", color=(0, 0, 0))
                 pagina.insert_image(
-                    fitz.Rect(72, 70, 520, 70 + 160),
+                    fitz.Rect(72, 70, 520, 70 + 500),
                     stream=buffer.getvalue()
                 )
                 print("✅ Gabarito incluído com sucesso.")
