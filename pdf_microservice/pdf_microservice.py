@@ -45,7 +45,7 @@ async def gerar_pdf(req: PDFRequest):
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
         # Subpasta da disciplina
-        subpasta = "matematica" if req.disciplina.upper() == "MATEMÁTICA" else "portugues"
+        subpasta = "matematica" if req.disciplina.upper() == "matematica" else "portugues"
 
         # Imagens
         y = 185
