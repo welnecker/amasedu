@@ -26,6 +26,7 @@ async def gerar_pdf(req: PDFRequest):
     try:
         pdf = fitz.open("modelo.pdf")
         pagina = pdf[0]
+        num_pagina = 1
 
         # Cabeçalho
         y = 100
@@ -42,7 +43,7 @@ async def gerar_pdf(req: PDFRequest):
                            fontsize=12, fontname="helv", color=(0, 0, 0))
         y += 40
 
-        # Título e subpasta baseados na disciplina
+        # Título e subpasta
         disciplina_normalizada = normalizar(req.disciplina)
         subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
         titulo_texto = f"ATIVIDADE DE {'MATEMÁTICA' if subpasta == 'matematica' else 'LÍNGUA PORTUGUESA'}"
@@ -54,13 +55,16 @@ async def gerar_pdf(req: PDFRequest):
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
         y += 25
 
-        print(f"📘 Disciplina: {req.disciplina} → subpasta: {subpasta}")
-        print(f"🖼️ Título gerado: {titulo_texto}")
+        # Número da página inicial
+        pagina.insert_text(
+            fitz.Point(520, 780),
+            f"Página {num_pagina}",
+            fontsize=10, fontname="helv", color=(0, 0, 0)
+        )
 
-        # Colagem das atividades
+        # Atividades
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
-            print(f"🔗 Carregando imagem: {url_img}")
             try:
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
@@ -71,10 +75,16 @@ async def gerar_pdf(req: PDFRequest):
                     fator_escala = nova_largura / largura_original
                     nova_altura = altura_original * fator_escala
 
-                    # Verifica se cabe na página atual
-                    if y + nova_altura + 40 > 792:  # margem de segurança
+                    # Quebra de página se necessário
+                    if y + nova_altura + 40 > 792:
                         pagina = pdf.new_page()
+                        num_pagina += 1
                         y = 50
+                        pagina.insert_text(
+                            fitz.Point(520, 780),
+                            f"Página {num_pagina}",
+                            fontsize=10, fontname="helv", color=(0, 0, 0)
+                        )
 
                     buffer = BytesIO()
                     img.save(buffer, format='JPEG')
@@ -93,7 +103,7 @@ async def gerar_pdf(req: PDFRequest):
                 print(f"❌ Erro ao baixar imagem {nome}: {img_error}")
                 continue
 
-        # Gabarito com altura proporcional
+        # Gabarito final
         try:
             url_gabarito = "https://raw.githubusercontent.com/welnecker/questoesama/main/img/gabarito-preencher.jpg"
             req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
@@ -109,13 +119,18 @@ async def gerar_pdf(req: PDFRequest):
                 img.save(buffer, format='JPEG')
 
                 pagina = pdf.new_page()
+                num_pagina += 1
+                pagina.insert_text(
+                    fitz.Point(520, 780),
+                    f"Página {num_pagina}",
+                    fontsize=10, fontname="helv", color=(0, 0, 0)
+                )
                 pagina.insert_text(fitz.Point(72, 40), "GABARITO",
                                    fontsize=12, fontname="helv", color=(0, 0, 0))
                 pagina.insert_image(
                     fitz.Rect(72, 70, 72 + nova_largura, 70 + nova_altura),
                     stream=buffer.getvalue()
                 )
-                print(f"✅ Gabarito incluído com altura proporcional: {nova_altura:.1f}")
         except Exception as e:
             print(f"❌ Erro ao adicionar gabarito: {e}")
 
