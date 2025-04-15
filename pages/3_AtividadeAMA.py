@@ -10,6 +10,33 @@ from googleapiclient.discovery import build
 
 st.set_page_config(page_title="ATIVIDADE AMA 2025", page_icon="📚")
 
+# 🔒 Garantia de que valores essenciais do session_state existem
+
+if "disciplina" not in st.session_state:
+    st.session_state.disciplina = "LÍNGUA PORTUGUESA"
+
+if "selecionado_escola" not in st.session_state:
+    st.session_state.selecionado_escola = ""
+
+if "selecionado_sre" not in st.session_state:
+    st.session_state.selecionado_sre = ""
+
+if "selecionado_turma" not in st.session_state:
+    st.session_state.selecionado_turma = ""
+
+if "serie" not in st.session_state:
+    st.session_state.serie = ""
+
+if "habilidade" not in st.session_state:
+    st.session_state.habilidade = ""
+
+if "descritor" not in st.session_state:
+    st.session_state.descritor = ""
+
+if "atividades_exibidas" not in st.session_state:
+    st.session_state.atividades_exibidas = []
+
+
 # 🚫 Impede múltiplos cliques no botão GERAR ATIVIDADE
 if "pdf_gerado" not in st.session_state:
     st.session_state.pdf_gerado = False
