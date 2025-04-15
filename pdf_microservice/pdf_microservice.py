@@ -16,6 +16,7 @@ class PDFRequest(BaseModel):
     data: str
     atividades: List[str]
     titulo: str = "ATIVIDADE"
+    disciplina: str  # ✅ Adicionado
 
 @app.post("/gerar-pdf")
 async def gerar_pdf(req: PDFRequest):
@@ -43,12 +44,13 @@ async def gerar_pdf(req: PDFRequest):
         pagina.insert_text(fitz.Point(posicao_x, 160),
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
+        # Subpasta da disciplina
+        subpasta = "matematica" if req.disciplina.upper() == "MATEMÁTICA" else "portugues"
+
         # Imagens
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
-            subpasta = "matematica" if req.disciplina.upper() == "MATEMATICA" else "portugues"
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
-
             try:
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
@@ -74,7 +76,8 @@ async def gerar_pdf(req: PDFRequest):
                     )
                     y += 162
 
-            except:
+            except Exception as img_error:
+                print(f"Erro ao baixar imagem {nome}: {img_error}")
                 continue
 
         # Finaliza PDF
