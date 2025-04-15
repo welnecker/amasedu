@@ -90,8 +90,8 @@ if gerar_pdf:
     with st.spinner("Gerando PDF, salvando código e registrando log..."):
         try:
             # ✅ Monta o caminho correto com a pasta da disciplina
-            disciplina_path = "matematica" if st.session_state.disciplina == "MATEMÁTICA" else "portugues"
-            atividades = [f"{disciplina_path}/{nome}" for nome in st.session_state.atividades_exibidas]
+            atividades = st.session_state.atividades_exibidas  # ✅ Envie só os nomes
+
 
             codigo_atividade = gerar_codigo_aleatorio()
             st.session_state.codigo_atividade = codigo_atividade
