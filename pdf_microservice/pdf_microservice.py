@@ -16,10 +16,9 @@ class PDFRequest(BaseModel):
     professor: str
     data: str
     atividades: List[str]
-    disciplina: str  # titulo removido, será calculado aqui
+    disciplina: str  # título será definido no backend
 
 def normalizar(texto):
-    """Remove acentos e deixa em maiúsculas"""
     return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode().upper()
 
 @app.post("/gerar-pdf")
@@ -40,7 +39,7 @@ async def gerar_pdf(req: PDFRequest):
                            f"Professor(a): {req.professor}",
                            fontsize=12, fontname="helv", color=(0, 0, 0))
 
-        # Normaliza disciplina, define subpasta e título
+        # Título e subpasta baseados na disciplina
         disciplina_normalizada = normalizar(req.disciplina)
         subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
         titulo_texto = f"ATIVIDADE DE {'MATEMÁTICA' if subpasta == 'matematica' else 'LÍNGUA PORTUGUESA'}"
@@ -52,15 +51,14 @@ async def gerar_pdf(req: PDFRequest):
         pagina.insert_text(fitz.Point(posicao_x, 160),
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
-        print(f"🧪 Disciplina recebida: {req.disciplina}")
-        print(f"📁 Subpasta usada: {subpasta}")
-        print(f"📘 Título definido: {titulo_texto}")
+        print(f"📘 Disciplina: {req.disciplina} → subpasta: {subpasta}")
+        print(f"🖼️ Título gerado: {titulo_texto}")
 
         # Atividades
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
-            print(f"🖼️ Buscando imagem: {url_img}")
+            print(f"🔗 Carregando imagem: {url_img}")
             try:
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
@@ -88,12 +86,18 @@ async def gerar_pdf(req: PDFRequest):
                 print(f"❌ Erro ao baixar imagem {nome}: {img_error}")
                 continue
 
-        # Adiciona imagem do gabarito em branco no final
+        # Gabarito com altura proporcional
         try:
             url_gabarito = "https://raw.githubusercontent.com/welnecker/questoesama/main/img/gabarito-preencher.jpg"
             req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req_img) as resp:
                 img = Image.open(BytesIO(resp.read())).convert("RGB")
+                largura_original, altura_original = img.size
+
+                nova_largura = 448  # largura útil do PDF
+                fator_escala = nova_largura / largura_original
+                nova_altura = altura_original * fator_escala
+
                 buffer = BytesIO()
                 img.save(buffer, format='JPEG')
 
@@ -101,10 +105,10 @@ async def gerar_pdf(req: PDFRequest):
                 pagina.insert_text(fitz.Point(72, 40), "GABARITO",
                                    fontsize=12, fontname="helv", color=(0, 0, 0))
                 pagina.insert_image(
-                    fitz.Rect(72, 70, 520, 70 + 500),
+                    fitz.Rect(72, 70, 72 + nova_largura, 70 + nova_altura),
                     stream=buffer.getvalue()
                 )
-                print("✅ Gabarito incluído com sucesso.")
+                print(f"✅ Gabarito incluído com altura proporcional: {nova_altura:.1f}")
         except Exception as e:
             print(f"❌ Erro ao adicionar gabarito: {e}")
 
