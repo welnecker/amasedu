@@ -7,6 +7,7 @@ from PIL import Image
 import urllib.request
 from io import BytesIO
 from datetime import datetime
+import unicodedata  # ✅ Importado para remover acentos
 
 app = FastAPI()
 
@@ -16,7 +17,11 @@ class PDFRequest(BaseModel):
     data: str
     atividades: List[str]
     titulo: str = "ATIVIDADE"
-    disciplina: str  # ✅ Adicionado
+    disciplina: str
+
+def normalizar(texto):
+    """Remove acentos e deixa em maiúsculas"""
+    return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode().upper()
 
 @app.post("/gerar-pdf")
 async def gerar_pdf(req: PDFRequest):
@@ -45,12 +50,17 @@ async def gerar_pdf(req: PDFRequest):
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
         # Subpasta da disciplina
-        subpasta = "matematica" if req.disciplina.upper() == "matematica" else "portugues"
+        disciplina_normalizada = normalizar(req.disciplina)
+        subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
+
+        print(f"🧪 Disciplina recebida: {req.disciplina}")
+        print(f"📁 Subpasta usada: {subpasta}")
 
         # Imagens
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
+            print(f"🖼️ Buscando imagem: {url_img}")
             try:
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
@@ -60,16 +70,14 @@ async def gerar_pdf(req: PDFRequest):
 
                     if y > 700:
                         pagina = pdf.new_page()
-                        y = 50  # margem superior da nova página
+                        y = 50
                     else:
-                        y += 12  # margem entre imagens
+                        y += 12
 
-                    # Questão N
-                    pagina.insert_text(fitz.Point(72, y),
-                                       f"Questão {i}", fontsize=12, fontname="helv", color=(0, 0, 0))
+                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}",
+                                       fontsize=12, fontname="helv", color=(0, 0, 0))
                     y += 22
 
-                    # Imagem
                     pagina.insert_image(
                         fitz.Rect(72, y, 520, y + 160),
                         stream=buffer.getvalue()
@@ -77,10 +85,9 @@ async def gerar_pdf(req: PDFRequest):
                     y += 162
 
             except Exception as img_error:
-                print(f"Erro ao baixar imagem {nome}: {img_error}")
+                print(f"❌ Erro ao baixar imagem {nome}: {img_error}")
                 continue
 
-        # Finaliza PDF
         pdf_bytes = pdf.write()
         pdf_stream = BytesIO(pdf_bytes)
         nome_arquivo = f"{req.professor}_{req.data}.pdf"
