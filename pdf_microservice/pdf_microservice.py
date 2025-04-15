@@ -16,8 +16,8 @@ class PDFRequest(BaseModel):
     professor: str
     data: str
     atividades: List[str]
-    titulo: str = "ATIVIDADE"
-    disciplina: str
+    disciplina: str  # ✅ o único campo relevante para gerar o título
+
 
 def normalizar(texto):
     """Remove acentos e deixa em maiúsculas"""
@@ -41,13 +41,18 @@ async def gerar_pdf(req: PDFRequest):
                            f"Professor(a): {req.professor}",
                            fontsize=12, fontname="helv", color=(0, 0, 0))
 
-        # Título centralizado
-        titulo_texto = req.titulo.upper()
+        # Normaliza disciplina, define subpasta e título
+        disciplina_normalizada = normalizar(req.disciplina)
+        subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
+        titulo_texto = f"ATIVIDADE DE {'MATEMÁTICA' if subpasta == 'matematica' else 'LÍNGUA PORTUGUESA'}"
+
+            # Título centralizado
         largura_titulo = fitz.get_text_length(titulo_texto, fontname="helv", fontsize=14)
         pagina_largura = pagina.rect.width
         posicao_x = (pagina_largura - largura_titulo) / 2
         pagina.insert_text(fitz.Point(posicao_x, 160),
-                           titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
+                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
+
 
         # Subpasta da disciplina
         disciplina_normalizada = normalizar(req.disciplina)
