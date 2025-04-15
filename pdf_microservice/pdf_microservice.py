@@ -7,7 +7,7 @@ from PIL import Image
 import urllib.request
 from io import BytesIO
 from datetime import datetime
-import unicodedata  # ✅ Importado para remover acentos
+import unicodedata
 
 app = FastAPI()
 
@@ -16,8 +16,7 @@ class PDFRequest(BaseModel):
     professor: str
     data: str
     atividades: List[str]
-    disciplina: str  # ✅ o único campo relevante para gerar o título
-
+    disciplina: str  # titulo removido, será calculado aqui
 
 def normalizar(texto):
     """Remove acentos e deixa em maiúsculas"""
@@ -46,22 +45,18 @@ async def gerar_pdf(req: PDFRequest):
         subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
         titulo_texto = f"ATIVIDADE DE {'MATEMÁTICA' if subpasta == 'matematica' else 'LÍNGUA PORTUGUESA'}"
 
-            # Título centralizado
+        # Título centralizado
         largura_titulo = fitz.get_text_length(titulo_texto, fontname="helv", fontsize=14)
         pagina_largura = pagina.rect.width
         posicao_x = (pagina_largura - largura_titulo) / 2
         pagina.insert_text(fitz.Point(posicao_x, 160),
-                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
-
-
-        # Subpasta da disciplina
-        disciplina_normalizada = normalizar(req.disciplina)
-        subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
+                           titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
 
         print(f"🧪 Disciplina recebida: {req.disciplina}")
         print(f"📁 Subpasta usada: {subpasta}")
+        print(f"📘 Título definido: {titulo_texto}")
 
-        # Imagens
+        # Atividades
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
@@ -93,6 +88,27 @@ async def gerar_pdf(req: PDFRequest):
                 print(f"❌ Erro ao baixar imagem {nome}: {img_error}")
                 continue
 
+        # Adiciona imagem do gabarito em branco no final
+        try:
+            url_gabarito = "https://raw.githubusercontent.com/welnecker/questoesama/main/img/gabarito-preencher.jpg"
+            req_img = urllib.request.Request(url_gabarito, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req_img) as resp:
+                img = Image.open(BytesIO(resp.read())).convert("RGB")
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG')
+
+                pagina = pdf.new_page()
+                pagina.insert_text(fitz.Point(72, 40), "GABARITO",
+                                   fontsize=12, fontname="helv", color=(0, 0, 0))
+                pagina.insert_image(
+                    fitz.Rect(72, 70, 520, 70 + 160),
+                    stream=buffer.getvalue()
+                )
+                print("✅ Gabarito incluído com sucesso.")
+        except Exception as e:
+            print(f"❌ Erro ao adicionar gabarito: {e}")
+
+        # Finaliza PDF
         pdf_bytes = pdf.write()
         pdf_stream = BytesIO(pdf_bytes)
         nome_arquivo = f"{req.professor}_{req.data}.pdf"
