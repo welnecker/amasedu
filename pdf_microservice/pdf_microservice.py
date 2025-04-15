@@ -63,23 +63,21 @@ async def gerar_pdf(req: PDFRequest):
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
                     img = Image.open(BytesIO(resp.read())).convert("RGB")
+                    largura_original, altura_original = img.size
+
+                    nova_largura = 448  # largura útil do PDF
+                    fator_escala = nova_largura / largura_original
+                    nova_altura = altura_original * fator_escala
+
                     buffer = BytesIO()
                     img.save(buffer, format='JPEG')
 
-                    if y > 700:
-                        pagina = pdf.new_page()
-                        y = 50
-                    else:
-                        y += 12
-
-                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}",
-                                       fontsize=12, fontname="helv", color=(0, 0, 0))
-                    y += 22
-
                     pagina.insert_image(
-                        fitz.Rect(72, y, 520, y + 160),
+                        fitz.Rect(72, y, 72 + nova_largura, y + nova_altura),
                         stream=buffer.getvalue()
                     )
+                    y += nova_altura
+
                     y += 162
 
             except Exception as img_error:
