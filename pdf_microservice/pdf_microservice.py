@@ -46,7 +46,9 @@ async def gerar_pdf(req: PDFRequest):
         # Imagens
         y = 185
         for i, nome in enumerate(req.atividades, start=1):
-            url_img = f"https://questoesama.pages.dev/{nome}.jpg"
+            subpasta = "matematica" if req.disciplina.upper() == "MATEMATICA" else "portugues"
+            url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
+
             try:
                 req_img = urllib.request.Request(url_img, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req_img) as resp:
