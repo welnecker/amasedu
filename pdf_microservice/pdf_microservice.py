@@ -16,7 +16,7 @@ class PDFRequest(BaseModel):
     professor: str
     data: str
     atividades: List[str]
-    disciplina: str  # título será definido no backend
+    disciplina: str
 
 def normalizar(texto):
     return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode().upper()
@@ -28,34 +28,36 @@ async def gerar_pdf(req: PDFRequest):
         pagina = pdf[0]
 
         # Cabeçalho
-        y_base = 100
-        pagina.insert_text(fitz.Point(72, y_base),
+        y = 100
+        pagina.insert_text(fitz.Point(72, y),
                            f"Escola: {req.escola}    Data: {datetime.strptime(req.data, '%Y-%m-%d').strftime('%d/%m/%Y')}",
                            fontsize=12, fontname="helv", color=(0, 0, 0))
-        pagina.insert_text(fitz.Point(72, y_base + 20),
+        y += 20
+        pagina.insert_text(fitz.Point(72, y),
                            "Estudante: _________________________________    Turma: ____________",
                            fontsize=12, fontname="helv", color=(0, 0, 0))
-        pagina.insert_text(fitz.Point(72, y_base + 40),
+        y += 20
+        pagina.insert_text(fitz.Point(72, y),
                            f"Professor(a): {req.professor}",
                            fontsize=12, fontname="helv", color=(0, 0, 0))
+        y += 40
 
         # Título e subpasta baseados na disciplina
         disciplina_normalizada = normalizar(req.disciplina)
         subpasta = "matematica" if "MATEMATICA" in disciplina_normalizada else "portugues"
         titulo_texto = f"ATIVIDADE DE {'MATEMÁTICA' if subpasta == 'matematica' else 'LÍNGUA PORTUGUESA'}"
 
-        # Título centralizado
         largura_titulo = fitz.get_text_length(titulo_texto, fontname="helv", fontsize=14)
         pagina_largura = pagina.rect.width
         posicao_x = (pagina_largura - largura_titulo) / 2
-        pagina.insert_text(fitz.Point(posicao_x, 160),
+        pagina.insert_text(fitz.Point(posicao_x, y),
                            titulo_texto, fontsize=14, fontname="helv", color=(0, 0, 0))
+        y += 25
 
         print(f"📘 Disciplina: {req.disciplina} → subpasta: {subpasta}")
         print(f"🖼️ Título gerado: {titulo_texto}")
 
-        # Atividades
-        y = 185
+        # Colagem das atividades
         for i, nome in enumerate(req.atividades, start=1):
             url_img = f"https://questoesama.pages.dev/{subpasta}/{nome}.jpg"
             print(f"🔗 Carregando imagem: {url_img}")
@@ -65,20 +67,27 @@ async def gerar_pdf(req: PDFRequest):
                     img = Image.open(BytesIO(resp.read())).convert("RGB")
                     largura_original, altura_original = img.size
 
-                    nova_largura = 448  # largura útil do PDF
+                    nova_largura = 448
                     fator_escala = nova_largura / largura_original
                     nova_altura = altura_original * fator_escala
 
+                    # Verifica se cabe na página atual
+                    if y + nova_altura + 40 > 792:  # margem de segurança
+                        pagina = pdf.new_page()
+                        y = 50
+
                     buffer = BytesIO()
                     img.save(buffer, format='JPEG')
+
+                    pagina.insert_text(fitz.Point(72, y), f"Questão {i}",
+                                       fontsize=12, fontname="helv", color=(0, 0, 0))
+                    y += 22
 
                     pagina.insert_image(
                         fitz.Rect(72, y, 72 + nova_largura, y + nova_altura),
                         stream=buffer.getvalue()
                     )
-                    y += nova_altura
-
-                    y += 162
+                    y += nova_altura + 10
 
             except Exception as img_error:
                 print(f"❌ Erro ao baixar imagem {nome}: {img_error}")
@@ -92,7 +101,7 @@ async def gerar_pdf(req: PDFRequest):
                 img = Image.open(BytesIO(resp.read())).convert("RGB")
                 largura_original, altura_original = img.size
 
-                nova_largura = 448  # largura útil do PDF
+                nova_largura = 448
                 fator_escala = nova_largura / largura_original
                 nova_altura = altura_original * fator_escala
 
