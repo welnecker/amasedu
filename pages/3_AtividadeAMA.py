@@ -135,8 +135,10 @@ if gerar_pdf:
                 "professor": professor,
                 "data": data.strftime("%Y-%m-%d"),
                 "atividades": atividades,
-                "titulo": titulo
-            }
+                "titulo": titulo,
+                "disciplina": st.session_state.disciplina  # ✅ Adicionado
+                }
+
             response = requests.post(url_api, json=payload)
 
             if response.status_code == 200:
