@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Bem-vindo ao AMA 2025", page_icon="🎓")
+st.set_page_config(page_title="Painel de Apoio à Recomposição das Aprendizagens", page_icon="🎓")
 
 st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
 st.title("🎓 Bem-vindo ao AMA 2025!")
