@@ -4,7 +4,7 @@ import random
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-st.set_page_config(page_title="Relatórios AMA 2025", page_icon="📊")
+st.set_page_config(page_title="Painel de Apoio à Recomposição das Aprendizagens", page_icon="📊")
 
 st.markdown("""
     <style>

@@ -4,7 +4,7 @@ import requests
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-st.set_page_config(page_title="Visualizador de Imagens", page_icon="🖼️")
+st.set_page_config(page_title="Painel de Apoio à Recomposição das Aprendizagens", page_icon="🖼️")
 st.markdown("""
 <h1 style='font-size:28px; white-space:nowrap;'>🖼️ Visualizador de Imagens das Atividades</h1>
 """, unsafe_allow_html=True)
